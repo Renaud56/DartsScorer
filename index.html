@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0e0a06">
     <title>Compteur Fléchettes - Suivi & Cible</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800;900&display=swap">
     <style>
         .btn-active:active {
             transform: scale(0.95);
@@ -84,6 +85,33 @@
         }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
         details[open] .chev { transform: rotate(180deg); }
+
+        /* ---- British pub theme: racing green, dark oak, brass ---- */
+        body {
+            background:
+                radial-gradient(700px 350px at 50% -10%, rgba(212,160,23,.14), transparent 60%),
+                repeating-linear-gradient(90deg, rgba(0,0,0,.18) 0 2px, transparent 2px 46px),
+                linear-gradient(#0c1f17, #08150f);
+            background-attachment: fixed;
+        }
+        h1, h2 { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
+        body .bg-slate-900 { background: rgba(22,16,10,.82); }
+        body .bg-slate-950 { background: rgba(10,22,16,.7); }
+        body .bg-slate-800 { background-color: #2b2016; }
+        body .border-slate-800, body .border-slate-700 { border-color: rgba(201,162,39,.28); }
+        body .shadow-lg, body .shadow-xl { box-shadow: 0 10px 30px -12px rgba(0,0,0,.8), inset 0 1px 0 rgba(201,162,39,.12); }
+        header.sticky { background: rgba(14,10,6,.92) !important; border-bottom: 2px solid #c9a227 !important; }
+        #bottom-nav { background: rgba(20,14,8,.95); border-color: rgba(201,162,39,.45); }
+        h2.bg-clip-text { background-image: linear-gradient(90deg, #e8c766, #c9a227, #f3e2a9) !important; }
+        input:focus { box-shadow: 0 0 0 3px rgba(201,162,39,.3); }
+        body .text-red-400, body .text-red-500 { color: #e0605a; }
+        body .bg-red-600 { background-color: #8b1e2d; }
+        body .hover\:bg-red-500:hover { background-color: #a82638; }
+        body .bg-emerald-600 { background-color: #1f6b45; }
+        body .hover\:bg-emerald-500:hover { background-color: #2a8558; }
+        body .text-emerald-400 { color: #5fc08a; }
+        body .text-amber-400, body .text-amber-300 { color: #e8c766; }
+        body .bg-amber-600 { background-color: #b8861b; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between overflow-x-hidden">
