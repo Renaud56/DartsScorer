@@ -1,0 +1,2303 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>Compteur Fléchettes - Suivi & Cible</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .btn-active:active {
+            transform: scale(0.95);
+        }
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+        }
+        #bottom-nav {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        summary::-webkit-details-marker { display: none; }
+
+        /* ---- v3 theme ---- */
+        html, body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body {
+            background:
+                radial-gradient(600px 300px at 10% -5%, rgba(239,68,68,.16), transparent 60%),
+                radial-gradient(500px 300px at 100% 0%, rgba(16,185,129,.12), transparent 60%),
+                #070b14;
+            background-attachment: fixed;
+            padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+        }
+        body .bg-slate-900 { background: rgba(15,23,42,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+        body .bg-slate-950 { background: rgba(2,6,23,.55); }
+        body .border-slate-800, body .border-slate-700 { border-color: rgba(148,163,184,.14); }
+        body .rounded-xl { border-radius: 1rem; }
+        body .shadow-lg, body .shadow-xl { box-shadow: 0 10px 30px -12px rgba(0,0,0,.6); }
+        header.sticky { background: rgba(7,11,20,.8) !important; backdrop-filter: blur(14px); border-bottom-color: rgba(148,163,184,.1) !important; box-shadow: none; }
+        #bottom-nav {
+            left: .5rem; right: .5rem; bottom: calc(.5rem + env(safe-area-inset-bottom)); padding-bottom: 0;
+            border: 1px solid rgba(148,163,184,.16); border-radius: 1.25rem; overflow: hidden;
+            box-shadow: 0 12px 32px -10px rgba(0,0,0,.8);
+        }
+        .score-num { font-variant-numeric: tabular-nums; }
+        input:focus { box-shadow: 0 0 0 3px rgba(239,68,68,.25); }
+
+        /* ---- subtle motion ---- */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(.94) translateY(6px); } to { opacity: 1; transform: none; } }
+        @keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.12); color: #fbbf24; } 100% { transform: scale(1); } }
+        @keyframes bumpLong { 0% { transform: scale(1); } 15% { transform: scale(1.5); color: #fbbf24; text-shadow: 0 0 18px #fbbf24; } 70% { transform: scale(1.5); color: #fbbf24; text-shadow: 0 0 18px #fbbf24; } 100% { transform: scale(1); } }
+        @keyframes dartPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        #game-setup-screen:not(.hidden), #active-game-screen:not(.hidden) { animation: fadeUp .28s ease-out; }
+        #game-setup-screen:not(.hidden) > * { animation: fadeUp .35s ease-out backwards; }
+        #game-setup-screen:not(.hidden) > *:nth-child(2) { animation-delay: .04s; }
+        #game-setup-screen:not(.hidden) > *:nth-child(3) { animation-delay: .08s; }
+        #game-setup-screen:not(.hidden) > *:nth-child(4) { animation-delay: .12s; }
+        #game-setup-screen:not(.hidden) > *:nth-child(5) { animation-delay: .16s; }
+        [id$="-modal"]:not(.hidden) { animation: fadeIn .18s ease-out; }
+        [id$="-modal"]:not(.hidden) > div { animation: popIn .24s cubic-bezier(.2,.9,.3,1.1); }
+        .score-num.bump { animation: bump .35s ease-out; }
+        .score-num.bump-long { animation: bumpLong 1.4s ease-in-out; }
+        .dart-pop { animation: dartPop .18s ease-out; }
+        .pop-once { animation: popIn .5s cubic-bezier(.2,.9,.3,1.4); }
+        button { transition: transform .12s ease, background-color .15s ease, border-color .15s ease, filter .15s ease; }
+        @media (hover: hover) {
+            button:not(:disabled):hover { filter: brightness(1.25); border-color: rgba(148,163,184,.5); }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+        details[open] .chev { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Header / Navigation Bar -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2 flex justify-between items-center sticky top-0 z-40 shadow-md">
+        <div class="flex items-center gap-2">
+            <svg viewBox="0 0 64 64" class="w-7 h-7" aria-hidden="true"><g transform="rotate(-45 32 32)"><polygon points="4,32 16,29 16,35" fill="#cbd5e1"/><rect x="16" y="29" width="18" height="6" rx="2" fill="#f59e0b"/><rect x="34" y="31" width="10" height="2" fill="#94a3b8"/><polygon points="42,32 52,22 62,22 56,32 62,42 52,42" fill="#ef4444"/></g></svg>
+            <h1 class="font-bold text-base tracking-wide text-slate-100 leading-tight" id="header-title">Dart Master</h1>
+        </div>
+        <p class="text-xs text-slate-400 font-mono" id="header-subtitle">Prêt à jouer</p>
+    </header>
+
+    <!-- BOTTOM ACTION BAR (thumb zone) -->
+    <nav id="bottom-nav" class="fixed bottom-0 inset-x-0 z-40 bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4">
+        <button onclick="handleMenuButtonClick()" class="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-red-400 active:bg-slate-800 transition">
+            <i class="fa-solid fa-house text-lg"></i><span class="text-[11px] font-semibold">Menu</span>
+        </button>
+        <button onclick="openCurrentGameStats()" class="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-emerald-400 active:bg-slate-800 transition">
+            <i class="fa-solid fa-chart-line text-lg"></i><span class="text-[11px] font-semibold">Stats</span>
+        </button>
+        <button onclick="openHistoryModal()" class="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-amber-400 active:bg-slate-800 transition">
+            <i class="fa-solid fa-clock-rotate-left text-lg"></i><span class="text-[11px] font-semibold">Historique</span>
+        </button>
+        <button onclick="undoLastAction()" id="undo-btn" class="flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] text-slate-200 disabled:opacity-30 active:bg-slate-800 transition" disabled>
+            <i class="fa-solid fa-rotate-left text-lg"></i><span class="text-[11px] font-semibold">Annuler</span>
+        </button>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-3xl w-full mx-auto p-3 flex flex-col gap-3 justify-start">
+
+        <!-- GAME SETUP SCREEN / HOME PAGE -->
+        <div id="game-setup-screen" class="my-auto flex flex-col gap-5 py-4">
+            <div class="text-center space-y-1">
+                <div class="flex items-center justify-center gap-3">
+                    <svg viewBox="0 0 64 64" class="w-10 h-10" aria-hidden="true"><g transform="rotate(-45 32 32)"><polygon points="4,32 16,29 16,35" fill="#cbd5e1"/><rect x="16" y="29" width="18" height="6" rx="2" fill="#f59e0b"/><rect x="34" y="31" width="10" height="2" fill="#94a3b8"/><polygon points="42,32 52,22 62,22 56,32 62,42 52,42" fill="#ef4444"/></g></svg>
+                    <h2 class="text-4xl font-black tracking-tight bg-gradient-to-r from-red-400 via-amber-300 to-emerald-300 bg-clip-text text-transparent">Dart Master</h2>
+                </div>
+                <p class="text-slate-400 text-sm">Configurez vos parties ou reprenez un jeu en cours</p>
+            </div>
+
+            <!-- HOMEPAGE PODIUM -->
+            <div class="bg-slate-900 p-3 rounded-xl border border-amber-500/30 shadow-lg">
+                <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> Classement Général (Podium)
+                </h3>
+                <div id="home-podium-list" class="grid grid-cols-3 gap-2 text-center text-xs items-end">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </div>
+
+            <!-- RESUME GAME BANNER -->
+            <div id="resume-game-card" class="hidden bg-emerald-950/50 border border-emerald-500/40 p-4 rounded-xl flex items-center justify-between shadow-lg">
+                <div>
+                    <h4 class="font-bold text-emerald-400 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-play"></i> Partie suspendue en cours
+                    </h4>
+                    <p class="text-slate-300 text-xs mt-0.5" id="resume-game-info">Mode de jeu...</p>
+                </div>
+                <button onclick="resumeSavedGame()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs transition shadow-md">
+                    Reprendre
+                </button>
+            </div>
+
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Nombre de Joueurs (1 à 4)</label>
+                    <button type="button" onclick="openPlayersModal()" class="text-xs font-bold text-sky-300 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 flex items-center gap-1.5 active:scale-95">
+                        <i class="fa-solid fa-users-gear"></i> Gérer les joueurs
+                    </button>
+                </div>
+                <div class="grid grid-cols-4 gap-2">
+                    <button type="button" onclick="setPlayerCount(1)" id="pcount-1" class="py-3 rounded-lg font-bold text-base bg-slate-800 border border-slate-700 active:scale-95 transition">1</button>
+                    <button type="button" onclick="setPlayerCount(2)" id="pcount-2" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700 active:scale-95 transition">2</button>
+                    <button type="button" onclick="setPlayerCount(3)" id="pcount-3" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700 active:scale-95 transition">3</button>
+                    <button type="button" onclick="setPlayerCount(4)" id="pcount-4" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700 active:scale-95 transition">4</button>
+                </div>
+
+                <div id="player-inputs-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2"></div>
+
+                <div class="pt-2 space-y-2">
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Format (manches)</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button type="button" onclick="setLegsToWin(1)" id="legs-1" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700">1 manche</button>
+                        <button type="button" onclick="setLegsToWin(2)" id="legs-2" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700">BO3</button>
+                        <button type="button" onclick="setLegsToWin(3)" id="legs-3" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700">BO5</button>
+                        <button type="button" onclick="setLegsToWin(4)" id="legs-4" class="py-2.5 rounded-lg font-bold text-sm bg-slate-800 border border-slate-700">BO7</button>
+                    </div>
+                    <p id="legs-hint" class="text-[11px] text-slate-500"></p>
+                </div>
+
+                <div class="pt-2 space-y-2">
+                    <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Type de partie</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="setCompetition(true)" id="comp-on" class="py-2.5 rounded-lg font-bold text-sm border active:scale-95 transition"><i class="fa-solid fa-trophy mr-1"></i> Compétition</button>
+                        <button type="button" onclick="setCompetition(false)" id="comp-off" class="py-2.5 rounded-lg font-bold text-sm border active:scale-95 transition"><i class="fa-solid fa-dice mr-1"></i> Amical</button>
+                    </div>
+                    <p id="comp-hint" class="text-[11px] text-slate-500"></p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <!-- MODE X01 SETUP -->
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col justify-between gap-3 shadow-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-red-950/60 border border-red-500/40 flex items-center justify-center text-red-500 font-black text-lg">X01</div>
+                        <div>
+                            <h4 class="font-bold text-slate-100 text-sm">Mode X01</h4>
+                            <p class="text-[11px] text-slate-400">Arriver exactement à 0</p>
+                        </div>
+                    </div>
+
+                    <!-- DOUBLE OUT TOGGLE OPTION -->
+                    <div class="bg-slate-950/70 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <span class="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
+                            <i class="fa-solid fa-bullseye text-amber-400"></i> Finir par un Double
+                        </span>
+                        <button type="button" onclick="toggleDoubleOutOption()" id="double-out-toggle" class="bg-slate-800 border border-slate-700 text-slate-400 font-bold px-2.5 py-1 rounded-lg text-xs transition">
+                            NON
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1.5 pt-1">
+                        <button onclick="startGame('x01', 301)" class="bg-slate-800 hover:bg-slate-700 hover:border-red-500 active:bg-red-600 border border-slate-700 py-3.5 rounded-xl font-bold text-base transition">301</button>
+                        <button onclick="startGame('x01', 501)" class="bg-slate-800 hover:bg-slate-700 hover:border-red-500 active:bg-red-600 border border-slate-700 py-3.5 rounded-xl font-bold text-base transition">501</button>
+                        <button onclick="startGame('x01', 701)" class="bg-slate-800 hover:bg-slate-700 hover:border-red-500 active:bg-red-600 border border-slate-700 py-3.5 rounded-xl font-bold text-base transition">701</button>
+                    </div>
+                </div>
+
+                <button onclick="startGame('cricket')" class="bg-gradient-to-br from-slate-900 to-slate-800 hover:from-slate-800 border border-slate-700 hover:border-emerald-500 p-4 rounded-2xl flex flex-col justify-between text-left transition group shadow-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-100 text-sm">Cricket Standard</h4>
+                            <p class="text-[11px] text-slate-400">15-20 + Bull. Vous marquez vos points.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-emerald-400 pt-3 flex items-center justify-between">
+                        Lancer Cricket Standard <i class="fa-solid fa-arrow-right"></i>
+                    </span>
+                </button>
+
+                <button onclick="startGame('cutthroat')" class="bg-gradient-to-br from-slate-900 to-slate-800 hover:from-slate-800 border border-slate-700 hover:border-amber-500 p-4 rounded-2xl flex flex-col justify-between text-left transition group shadow-xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg">
+                            <i class="fa-solid fa-skull"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-100 text-sm">Cricket Inversé</h4>
+                            <p class="text-[11px] text-slate-400">Cut-Throat: Points attribués aux adversaires.</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-amber-400 pt-3 flex items-center justify-between">
+                        Lancer Cricket Inversé <i class="fa-solid fa-arrow-right"></i>
+                    </span>
+                </button>
+            </div>
+
+            <!-- BACKUP -->
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-lg space-y-2">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk text-sky-400"></i> Sauvegarde de l'historique
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportBackup()" class="bg-slate-800 active:bg-sky-700 border border-slate-700 py-3 rounded-xl text-sm font-semibold text-sky-300 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i> Exporter
+                    </button>
+                    <button onclick="document.getElementById('import-file-input').click()" class="bg-slate-800 active:bg-sky-700 border border-slate-700 py-3 rounded-xl text-sm font-semibold text-sky-300 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-upload"></i> Importer
+                    </button>
+                    <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" onchange="importBackup(event)">
+                </div>
+                <p class="text-[11px] text-slate-500">Les données sont stockées dans le navigateur : exportez régulièrement.</p>
+            </div>
+        </div>
+
+        <!-- ACTIVE GAME SCREEN -->
+        <div id="active-game-screen" class="hidden flex-1 flex flex-col gap-2">
+            <div id="players-scoreboard" class="grid gap-2"></div>
+
+            <!-- MODE X01 CONTROLS -->
+            <div id="mode-x01-view" class="flex-1 flex flex-col gap-2">
+                <div class="grid grid-cols-3 gap-2 order-2">
+                    <button id="mult-1" onclick="setMultiplier(1)" class="py-2.5 rounded-xl font-extrabold text-xs sm:text-sm bg-slate-800 text-slate-200 border border-slate-700 active:scale-95 transition">SIMPLE (x1)</button>
+                    <button id="mult-2" onclick="setMultiplier(2)" class="py-2.5 rounded-xl font-extrabold text-xs sm:text-sm bg-slate-800 text-slate-200 border border-slate-700 active:scale-95 transition">DOUBLE (x2)</button>
+                    <button id="mult-3" onclick="setMultiplier(3)" class="py-2.5 rounded-xl font-extrabold text-xs sm:text-sm bg-slate-800 text-slate-200 border border-slate-700 active:scale-95 transition">TRIPLE (x3)</button>
+                </div>
+
+                <div id="keypad-x01-grid" class="grid grid-cols-5 gap-1.5 sm:gap-2 order-3"></div>
+
+                <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center gap-2 shadow order-4">
+                    <span class="text-xs text-slate-400 font-medium leading-tight pl-1">Total<br>volée</span>
+                    <input type="number" inputmode="numeric" id="quick-score-input" min="0" max="180" placeholder="0-180" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-center text-slate-100 font-bold focus:outline-none focus:border-red-500 text-base">
+                    <button onclick="submitQuickScore()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2.5 rounded-lg text-base active:scale-95 transition">OK</button>
+                </div>
+
+                <details class="bg-slate-900/80 border border-slate-800 rounded-xl order-5">
+                    <summary class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between cursor-pointer list-none">
+                        <span><i class="fa-solid fa-list-ol text-red-500 mr-1"></i> Historique des volées</span>
+                        <i class="fa-solid fa-chevron-down chev transition"></i>
+                    </summary>
+                    <div id="turns-history-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 pt-0"></div>
+                </details>
+            </div>
+
+            <!-- MODE CRICKET / CUT-THROAT VIEW -->
+            <div id="mode-cricket-view" class="hidden flex-1 flex flex-col gap-2">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+                    <div id="cricket-header-row" class="grid bg-slate-950 py-2.5 px-2 text-xs font-bold text-slate-300 text-center border-b border-slate-800 divide-x divide-slate-800"></div>
+                    <div id="cricket-rows" class="divide-y divide-slate-800/80"></div>
+                </div>
+
+                <details open class="bg-slate-900/80 border border-slate-800 rounded-xl">
+                    <summary class="p-3 text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between cursor-pointer list-none">
+                        <span><i class="fa-solid fa-list-check text-emerald-500 mr-1"></i> Journal des coups</span>
+                        <i class="fa-solid fa-chevron-down chev transition"></i>
+                    </summary>
+                    <div id="cricket-log-container" class="max-h-48 overflow-y-auto p-3 pt-0 space-y-1 text-xs"></div>
+                </details>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MENU QUIT/PAUSE CONFIRMATION MODAL -->
+    <div id="menu-confirm-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="w-14 h-14 bg-red-500/20 text-red-500 border border-red-500/30 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-circle-pause"></i>
+            </div>
+            <h3 class="text-xl font-extrabold text-white">Partie en cours</h3>
+            <p class="text-slate-300 text-xs leading-relaxed">Que souhaitez-vous faire avec votre partie actuelle ?</p>
+            
+            <div class="pt-2 flex flex-col gap-2.5">
+                <button onclick="closeMenuConfirmModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-xl text-xs sm:text-sm border border-slate-700 transition">
+                    <i class="fa-solid fa-play mr-1.5 text-emerald-400"></i> Continuer la partie
+                </button>
+                <button onclick="quitAndSaveGame()" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm transition shadow-md shadow-amber-900/20">
+                    <i class="fa-solid fa-floppy-disk mr-1.5"></i> Quitter et reprendre plus tard
+                </button>
+                <button onclick="stopAndDiscardGame()" class="w-full bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/40 font-semibold py-2 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-trash-can mr-1.5"></i> Quitter sans sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Players Modal -->
+    <div id="players-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl flex flex-col max-h-[85vh] gap-3">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear text-sky-400"></i> Joueurs
+                </h3>
+                <button onclick="closePlayersModal()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="new-player-input" maxlength="30" placeholder="Nouveau joueur" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-sm font-semibold focus:outline-none focus:border-emerald-500" onkeydown="if(event.key==='Enter')addManagedPlayer()">
+                <button onclick="addManagedPlayer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 rounded-lg text-sm">Ajouter</button>
+            </div>
+            <div id="players-manage-list" class="flex-1 overflow-y-auto space-y-2"></div>
+            <p class="text-[11px] text-slate-500">Supprimer un joueur le retire des listes et efface les parties auxquelles il a participé.</p>
+        </div>
+    </div>
+
+    <!-- Discard Modal -->
+    <div id="discard-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="w-14 h-14 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-xl font-black text-white">Partie en cours</h3>
+            <p class="text-slate-300 text-sm leading-relaxed">Une partie suspendue existe. Lancer une nouvelle partie va la <strong class="text-red-400">supprimer</strong>.</p>
+            <div class="flex flex-col gap-2">
+                <button onclick="cancelDiscard()" class="w-full bg-slate-800 border border-slate-700 text-slate-200 font-bold py-3 rounded-xl text-sm">Conserver et reprendre</button>
+                <button onclick="confirmDiscardAndStart()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl text-sm">Supprimer et commencer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leg Modal -->
+    <div id="leg-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="w-14 h-14 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto text-2xl">
+                <i class="fa-solid fa-flag-checkered"></i>
+            </div>
+            <h3 class="text-xl font-black text-white" id="leg-title">Manche terminée</h3>
+            <div id="leg-standings" class="space-y-1.5"></div>
+            <p class="text-slate-400 text-xs" id="leg-next"></p>
+            <button onclick="closeLegModal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-base transition">Manche suivante</button>
+        </div>
+    </div>
+
+    <!-- Winner Modal -->
+    <div id="winner-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="w-16 h-16 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-3xl pop-once">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h3 class="text-2xl font-black text-white" id="winner-title">Victoire !</h3>
+            <p class="text-slate-300 text-sm" id="winner-message">Joueur a remporté la partie !</p>
+            <div class="pt-2 flex flex-col gap-2">
+                <button onclick="undoWin()" class="w-full bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/40 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> Retour (annuler le dernier coup)
+                </button>
+                <button onclick="restartSameGame()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-sm transition">Rejouer</button>
+                <button onclick="openCurrentGameStats()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-chart-line"></i> Voir Stats & Cible
+                </button>
+                <button onclick="closeWinnerModal(); clearActiveGameStorage(); openSetupScreen();" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl text-sm transition">Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History & Saved Games Modal -->
+    <div id="history-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-lg w-full shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Historique des Parties
+                </h3>
+                <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- TAB NAVIGATION DÉDIÉE HISTORIQUE -->
+            <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 my-3">
+                <button id="hist-tab-x01-btn" onclick="switchHistoryTab('x01')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white transition">
+                    X01
+                </button>
+                <button id="hist-tab-cricket-btn" onclick="switchHistoryTab('cricket')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
+                    Cricket
+                </button>
+                <button id="hist-tab-players-btn" onclick="switchHistoryTab('players')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">
+                    Joueurs
+                </button>
+            </div>
+
+            <!-- CONTENU JOUEURS -->
+            <div id="hist-tab-players-content" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+                <div id="players-stats-container" class="space-y-3"></div>
+            </div>
+
+            <!-- CONTENU X01 -->
+            <div id="hist-tab-x01-content" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                <!-- Evolution Globale PPD Graphique déplacé ici -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Évolution de la moyenne (PPD)
+                    </h4>
+                    <div class="h-44 relative w-full flex items-center justify-center" id="globalChartContainer">
+                        <canvas id="globalScoreChart"></canvas>
+                    </div>
+                </div>
+
+                <div id="history-x01-list" class="space-y-3"></div>
+            </div>
+
+            <!-- CONTENU CRICKET -->
+            <div id="hist-tab-cricket-content" class="hidden flex-1 overflow-y-auto space-y-3 pr-1">
+                <div id="history-cricket-list" class="space-y-3"></div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-800 flex justify-between items-center mt-2">
+                <button onclick="clearSavedHistory()" class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+                    <i class="fa-solid fa-trash"></i> Effacer l'historique
+                </button>
+                <button onclick="closeHistoryModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-lg text-xs font-semibold">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DARTBOARD ANALYZER MODAL -->
+    <div id="stats-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-5">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 sm:p-6 max-w-2xl w-full shadow-2xl flex flex-col max-h-[92vh] overflow-y-auto gap-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div>
+                    <h3 class="text-lg font-black text-white flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-emerald-400"></i> Analyse de Partie
+                    </h3>
+                    <div class="mt-1 bg-red-950/60 border border-red-800/60 text-red-300 px-2.5 py-1 rounded-lg text-xs font-bold inline-block" id="stats-modal-match-info">
+                        Partie affichée : -
+                    </div>
+                </div>
+                <button onclick="closeStatsModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div id="score-evolution-box" class="bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 space-y-2">
+                    <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-chart-area text-indigo-400"></i> Évolution du score par tour
+                    </h4>
+                    <div class="h-56 relative w-full flex items-center justify-center" id="scoreChartContainer">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-bullseye text-red-500"></i> Impact des fléchettes sur la cible
+                        </h4>
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs text-slate-400">Joueur :</label>
+                            <select id="board-player-select" onchange="drawDartboardHits()" class="bg-slate-800 border border-slate-700 text-white text-xs font-semibold rounded-lg px-2 py-1 focus:outline-none">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center gap-3">
+                        <div class="relative w-64 h-64 sm:w-80 sm:h-80">
+                            <canvas id="dartboardCanvas" width="320" height="320" class="w-full h-full"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex justify-end">
+                <button onclick="closeStatsModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2 rounded-xl text-xs font-semibold">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'dart_scoreboard_poc_state';
+        const MATCH_HISTORY_KEY = 'dart_scoreboard_match_history';
+        const CRICKET_TARGETS = [20, 19, 18, 17, 16, 15, 25];
+        const SECTORS_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+
+        const PLAYER_COLORS = [
+            { main: '#ef4444', text: '#ffffff' }, 
+            { main: '#3b82f6', text: '#ffffff' }, 
+            { main: '#eab308', text: '#000000' }, 
+            { main: '#a855f7', text: '#ffffff' }  
+        ];
+
+        let selectedPlayerCount = 2;
+        let isDoubleOut = false;
+        let isGameActive = false;
+        let activeHistoryTab = 'x01';
+        let isViewingFromHistory = false;
+        let gameState = {
+            mode: 'x01',
+            x01Base: 501,
+            doubleOut: false,
+            players: [],
+            activePlayerIndex: 0,
+            currentTurnDarts: [],
+            multiplier: 1,
+            history: []
+        };
+
+        let activeChart = null;
+        let globalChart = null;
+        let currentViewingMatch = null;
+
+        window.onload = function() {
+            loadSettings();
+            setPlayerCount(selectedPlayerCount);
+            renderLegsButtons();
+            renderCompetitionButtons();
+            renderDoubleOutBtn();
+            renderX01Keypad();
+            openSetupScreen();
+        };
+
+        const SETTINGS_KEY = 'dart_scoreboard_settings';
+        let settings = {};
+        let selectedLegsToWin = 1;
+        let isCompetition = true;
+        const lastScores = {};
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function allTurns(p) {
+            return (p.pastTurns || []).concat(p.turns || []);
+        }
+
+        function loadSettings() {
+            try {
+                settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') || {};
+            } catch (e) {
+                settings = {};
+            }
+            selectedPlayerCount = settings.playerCount || 2;
+            isDoubleOut = !!settings.doubleOut;
+            selectedLegsToWin = settings.legsToWin || 1;
+            isCompetition = settings.competition !== false;
+        }
+
+        function setCompetition(v) {
+            isCompetition = v;
+            renderCompetitionButtons();
+        }
+
+        function renderCompetitionButtons() {
+            const on = 'bg-amber-600 text-white border-amber-500';
+            const off = 'bg-slate-800 text-slate-300 border-slate-700';
+            document.getElementById('comp-on').className = `py-2.5 rounded-lg font-bold text-sm border active:scale-95 transition ${isCompetition ? on : off}`;
+            document.getElementById('comp-off').className = `py-2.5 rounded-lg font-bold text-sm border active:scale-95 transition ${isCompetition ? off : on}`;
+            document.getElementById('comp-hint').innerText = isCompetition
+                ? 'La partie est enregistrée dans l\'historique et les statistiques'
+                : 'La partie n\'est pas enregistrée dans l\'historique';
+        }
+
+        function saveSettings(names) {
+            settings = { playerCount: selectedPlayerCount, names: names, doubleOut: isDoubleOut, legsToWin: selectedLegsToWin, competition: isCompetition };
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {}
+        }
+
+        function setLegsToWin(n) {
+            selectedLegsToWin = n;
+            renderLegsButtons();
+        }
+
+        function renderLegsButtons() {
+            [1, 2, 3, 4].forEach(n => {
+                const b = document.getElementById(`legs-${n}`);
+                b.className = `py-2.5 rounded-lg font-bold text-sm border active:scale-95 transition ${n === selectedLegsToWin ? 'bg-red-600 text-white border-red-500' : 'bg-slate-800 text-slate-300 border-slate-700'}`;
+            });
+            document.getElementById('legs-hint').innerText = selectedLegsToWin === 1
+                ? 'Une seule manche par partie'
+                : `Premier à ${selectedLegsToWin} manches gagnantes`;
+        }
+
+        function handleLegWin(idx) {
+            const p = gameState.players[idx];
+            p.legs = (p.legs || 0) + 1;
+
+            if (p.legs >= (gameState.legsToWin || 1)) {
+                saveCompletedMatch(p.name);
+                declareWinner(p.name);
+                updateUI();
+                return true;
+            }
+
+            gameState.players.forEach(q => {
+                q.pastTurns = (q.pastTurns || []).concat(q.turns || []);
+                q.turns = [];
+                q.score = gameState.mode === 'x01' ? gameState.x01Base : 0;
+                q.cricketMarks = {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0};
+            });
+            gameState.legStarter = ((gameState.legStarter || 0) + 1) % gameState.players.length;
+            gameState.activePlayerIndex = gameState.legStarter;
+            gameState.currentTurnDarts = [];
+            gameState.multiplier = 1;
+            saveStateToStorage();
+            updateUI();
+            showLegModal(p);
+            return false;
+        }
+
+        function showLegModal(winner) {
+            document.getElementById('leg-title').innerText = `${winner.name} remporte la manche !`;
+            document.getElementById('leg-standings').innerHTML = gameState.players.map(q => `
+                <div class="flex justify-between bg-slate-950 px-3 py-2 rounded-lg border ${q === winner ? 'border-emerald-500/60' : 'border-slate-800'} text-sm">
+                    <span class="font-semibold text-slate-200">${escapeHtml(q.name)}</span>
+                    <span class="font-black text-amber-400">${q.legs || 0} / ${gameState.legsToWin}</span>
+                </div>`).join('');
+            document.getElementById('leg-next').innerText = `${gameState.players[gameState.activePlayerIndex].name} commence la manche suivante`;
+            document.getElementById('leg-modal').classList.remove('hidden');
+        }
+
+        function closeLegModal() {
+            document.getElementById('leg-modal').classList.add('hidden');
+        }
+
+        function exportBackup() {
+            let matches = [];
+            try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]'); } catch (e) {}
+            const data = { app: 'dart-master', version: 1, exportedAt: new Date().toISOString(), matches: matches, settings: settings };
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dart-master-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showTemporaryToast(`${matches.length} partie(s) exportée(s)`);
+        }
+
+        function importBackup(ev) {
+            const file = ev.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const data = JSON.parse(reader.result);
+                    const incoming = Array.isArray(data) ? data : data.matches;
+                    if (!Array.isArray(incoming)) throw new Error('format');
+                    const valid = incoming.filter(m => m && m.id && Array.isArray(m.players));
+                    const current = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+                    const ids = new Set(current.map(m => m.id));
+                    const added = valid.filter(m => !ids.has(m.id));
+                    const merged = current.concat(added).sort((a, b) => b.id - a.id);
+                    localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(merged));
+                    renderHomePodium();
+                    showTemporaryToast(`${added.length} partie(s) importée(s)`);
+                } catch (e) {
+                    showTemporaryToast('Fichier invalide');
+                }
+                ev.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function renderPlayersStats() {
+            const c = document.getElementById('players-stats-container');
+            let matches = [];
+            try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]'); } catch (e) {}
+
+            const stats = {};
+            const get = n => {
+                if (!stats[n]) stats[n] = { name: n, played: 0, wins: 0, sumPts: 0, sumTurns: 0, bestAvg: 0, bestTurn: 0, n180: 0, n100: 0, h2h: {} };
+                return stats[n];
+            };
+
+            matches.forEach(m => {
+                const isX01 = m.rawMode === 'x01' || (m.mode && m.mode.startsWith('X01'));
+                m.players.forEach(p => {
+                    const s = get(p.name);
+                    const won = p.name === m.winner;
+                    s.played++;
+                    if (won) s.wins++;
+
+                    if (isX01) {
+                        const turns = allTurns(p);
+                        let pts = 0;
+                        turns.forEach(t => {
+                            if (t.busted) return;
+                            pts += t.points;
+                            if (t.points > s.bestTurn) s.bestTurn = t.points;
+                            if (t.points === 180) s.n180++;
+                            if (t.points >= 100) s.n100++;
+                        });
+                        if (turns.length) {
+                            s.sumPts += pts;
+                            s.sumTurns += turns.length;
+                            s.bestAvg = Math.max(s.bestAvg, pts / turns.length);
+                        }
+                    }
+
+                    m.players.forEach(o => {
+                        if (o.name === p.name) return;
+                        const h = s.h2h[o.name] || (s.h2h[o.name] = { w: 0, l: 0 });
+                        if (won) h.w++;
+                        else if (o.name === m.winner) h.l++;
+                    });
+                });
+            });
+
+            const list = Object.values(stats).sort((a, b) => b.wins - a.wins || (b.wins / b.played) - (a.wins / a.played));
+            if (list.length === 0) {
+                c.innerHTML = '<p class="text-slate-500 text-center text-xs py-4">Aucune partie enregistrée.</p>';
+                return;
+            }
+
+            c.innerHTML = list.map(s => {
+                const rate = Math.round((s.wins / s.played) * 100);
+                const avg = s.sumTurns ? (s.sumPts / s.sumTurns).toFixed(1) : '-';
+                const h2h = Object.entries(s.h2h).map(([n, h]) => `
+                    <div class="flex justify-between bg-slate-900/80 px-2 py-1.5 rounded-lg border border-slate-800 text-xs">
+                        <span class="text-slate-300">vs ${escapeHtml(n)}</span>
+                        <span><strong class="text-emerald-400">${h.w}V</strong> - <strong class="text-red-400">${h.l}D</strong></span>
+                    </div>`).join('');
+                const cell = (label, val, color) => `
+                    <div class="bg-slate-900/80 rounded-lg border border-slate-800 p-2 text-center">
+                        <div class="text-base font-black ${color}">${val}</div>
+                        <div class="text-[10px] text-slate-400">${label}</div>
+                    </div>`;
+                return `
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-slate-100">${escapeHtml(s.name)}</span>
+                            <span class="text-xs text-amber-400 font-bold">${s.wins}V / ${s.played}J · ${rate}%</span>
+                        </div>
+                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${rate}%"></div></div>
+                        <div class="grid grid-cols-3 gap-1.5">
+                            ${cell('Moy. X01', avg, 'text-amber-400')}
+                            ${cell('Meilleure moy.', s.bestAvg ? s.bestAvg.toFixed(1) : '-', 'text-amber-400')}
+                            ${cell('Meilleure volée', s.bestTurn || '-', 'text-emerald-400')}
+                            ${cell('180', s.n180, 'text-red-400')}
+                            ${cell('Volées 100+', s.n100, 'text-sky-400')}
+                        </div>
+                        ${h2h ? `<div class="space-y-1 pt-1">${h2h}</div>` : ''}
+                    </div>`;
+            }).join('');
+        }
+
+        function renderHomePodium() {
+            const podiumList = document.getElementById('home-podium-list');
+            if (!podiumList) return;
+            podiumList.innerHTML = '';
+
+            try {
+                const matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+                const winsCount = {};
+                matches.forEach(m => {
+                    if (m.winner) winsCount[m.winner] = (winsCount[m.winner] || 0) + 1;
+                });
+
+                const sortedPlayers = Object.entries(winsCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
+                const medals = ['🥇', '🥈', '🥉'];
+
+                if (sortedPlayers.length === 0) {
+                    podiumList.innerHTML = '<span class="col-span-3 text-slate-500 italic">Aucune victoire enregistrée</span>';
+                } else {
+                    const steps = [
+                        { h: 'h-14', bg: 'from-amber-300 to-amber-600', rank: 1 },
+                        { h: 'h-10', bg: 'from-slate-200 to-slate-500', rank: 2 },
+                        { h: 'h-7', bg: 'from-orange-300 to-orange-700', rank: 3 }
+                    ];
+                    // Classic podium order: 2nd, 1st, 3rd.
+                    [1, 0, 2].forEach(i => {
+                        const entry = sortedPlayers[i];
+                        if (!entry) {
+                            podiumList.innerHTML += '<div></div>';
+                            return;
+                        }
+                        const [pName, wins] = entry;
+                        const s = steps[i];
+                        podiumList.innerHTML += `
+                            <div class="flex flex-col items-center min-w-0">
+                                <div class="text-2xl leading-none">${medals[i]}</div>
+                                <div class="font-black text-sm text-slate-900 bg-gradient-to-b ${s.bg} rounded-lg px-2 py-0.5 my-1 truncate max-w-full shadow">${escapeHtml(pName)}</div>
+                                <div class="text-xs text-amber-300 font-bold mb-1">${wins} vic.</div>
+                                <div class="w-full ${s.h} bg-gradient-to-b ${s.bg} rounded-t-lg flex items-start justify-center pt-0.5 text-slate-900 font-black text-sm shadow-lg">${s.rank}</div>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (e) {
+                podiumList.innerHTML = '<span class="col-span-3 text-red-400 text-xs">Erreur podium</span>';
+            }
+        }
+
+        function checkSavedGameBanner() {
+            const resumeCard = document.getElementById('resume-game-card');
+            const resumeInfo = document.getElementById('resume-game-info');
+            
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const savedState = JSON.parse(saved);
+                    if (savedState && savedState.players && savedState.players.length > 0) {
+                        const pNames = savedState.players.map(p => p.name).join(', ');
+                        const mName = savedState.mode === 'x01' ? `X01 (${savedState.x01Base})` : savedState.mode;
+                        resumeInfo.innerText = `${mName} - Joueurs: ${pNames}`;
+                        resumeCard.classList.remove('hidden');
+                        return;
+                    }
+                }
+            } catch (e) {}
+            
+            resumeCard.classList.add('hidden');
+        }
+
+        function resumeSavedGame() {
+            if (loadSavedState()) {
+                isGameActive = true;
+                document.getElementById('game-setup-screen').classList.add('hidden');
+                document.getElementById('active-game-screen').classList.remove('hidden');
+            }
+        }
+
+        function handleMenuButtonClick() {
+            if (isGameActive) {
+                openMenuConfirmModal();
+            } else {
+                openSetupScreen();
+            }
+        }
+
+        function openMenuConfirmModal() {
+            document.getElementById('menu-confirm-modal').classList.remove('hidden');
+        }
+
+        function closeMenuConfirmModal() {
+            document.getElementById('menu-confirm-modal').classList.add('hidden');
+        }
+
+        function quitAndSaveGame() {
+            saveStateToStorage();
+            isGameActive = false;
+            closeMenuConfirmModal();
+            openSetupScreen();
+            showTemporaryToast("Partie sauvegardée !");
+        }
+
+        function stopAndDiscardGame() {
+            clearActiveGameStorage();
+            isGameActive = false;
+            closeMenuConfirmModal();
+            openSetupScreen();
+            showTemporaryToast("Partie annulée");
+        }
+
+        function clearActiveGameStorage() {
+            try {
+                localStorage.removeItem(STORAGE_KEY);
+            } catch (e) {}
+        }
+
+        function renderDoubleOutBtn() {
+            const btn = document.getElementById('double-out-toggle');
+            if (isDoubleOut) {
+                btn.innerText = "OUI";
+                btn.className = "bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-lg text-xs transition border border-amber-400";
+            } else {
+                btn.innerText = "NON";
+                btn.className = "bg-slate-800 border border-slate-700 text-slate-400 font-bold px-2.5 py-1 rounded-lg text-xs transition";
+            }
+        }
+
+        function toggleDoubleOutOption() {
+            isDoubleOut = !isDoubleOut;
+            renderDoubleOutBtn();
+        }
+
+        function setPlayerCount(count) {
+            selectedPlayerCount = count;
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`pcount-${i}`);
+                if (i === count) {
+                    btn.className = "py-3 rounded-lg font-bold text-base bg-red-600 text-white border border-red-500 shadow-md shadow-red-900/30 active:scale-95 transition";
+                } else {
+                    btn.className = "py-3 rounded-lg font-bold text-base bg-slate-800 text-slate-300 border border-slate-700 active:scale-95 transition";
+                }
+            }
+
+            const prevNames = [];
+            for (let i = 0; i < 4; i++) {
+                const el = document.getElementById(`setup-p${i}-name`);
+                if (el) prevNames[i] = el.value;
+            }
+            renderPlayerSelects(prevNames);
+        }
+
+        const PLAYERS_KEY = 'dart_scoreboard_players';
+        const PLAYERS_HIDDEN_KEY = 'dart_scoreboard_players_hidden';
+
+        function getHiddenPlayers() {
+            try { return (JSON.parse(localStorage.getItem(PLAYERS_HIDDEN_KEY) || '[]') || []).map(n => n.toLowerCase()); } catch (e) { return []; }
+        }
+
+        function setHiddenPlayers(list) {
+            try { localStorage.setItem(PLAYERS_HIDDEN_KEY, JSON.stringify(list)); } catch (e) {}
+        }
+
+        // Known players: stored list + names already in history/settings, de-duplicated case-insensitively.
+        function getKnownPlayers() {
+            const out = [];
+            const seen = new Set(getHiddenPlayers());
+            const add = n => {
+                n = (n || '').trim();
+                if (!n || seen.has(n.toLowerCase())) return;
+                seen.add(n.toLowerCase());
+                out.push(n);
+            };
+            try { (JSON.parse(localStorage.getItem(PLAYERS_KEY) || '[]') || []).forEach(add); } catch (e) {}
+            try {
+                (JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]') || []).forEach(m => (m.players || []).forEach(p => add(p.name)));
+            } catch (e) {}
+            (settings.names || []).forEach(add);
+            if (!out.length) ['Elo', 'Ren'].forEach(add);
+            return out;
+        }
+
+        function storeKnownPlayers(list) {
+            try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(list)); } catch (e) {}
+        }
+
+        function renderPlayerSelects(prevNames) {
+            const container = document.getElementById('player-inputs-container');
+            const players = getKnownPlayers();
+            container.innerHTML = '';
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const wanted = prevNames[i] !== undefined ? prevNames[i] : (settings.names && settings.names[i]);
+                const current = players.find(p => p.toLowerCase() === (wanted || '').toLowerCase()) || players[i] || players[0] || '';
+                const options = players.map(p => `<option value="${escapeHtml(p)}" ${p === current ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-xs text-slate-400 mb-1">Joueur ${i + 1}</label>
+                    <div class="flex gap-2">
+                        <select id="setup-p${i}-name" class="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-red-500 text-sm font-semibold">${options}</select>
+                        <button type="button" onclick="addNewPlayer(${i})" title="Nouveau joueur" class="w-10 shrink-0 bg-slate-800 active:bg-emerald-700 border border-slate-700 rounded-lg text-emerald-400 font-black text-lg">+</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function currentSelections() {
+            const names = [];
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const el = document.getElementById(`setup-p${i}-name`);
+                if (el) names[i] = el.value;
+            }
+            return names;
+        }
+
+        // Returns the canonical name, reusing an existing spelling (case-insensitive) or storing a new one.
+        function registerPlayer(name) {
+            name = (name || '').trim();
+            if (!name) return null;
+            setHiddenPlayers(getHiddenPlayers().filter(n => n !== name.toLowerCase()));
+            const players = getKnownPlayers();
+            const existing = players.find(p => p.toLowerCase() === name.toLowerCase());
+            if (existing) return { name: existing, created: false };
+            players.push(name);
+            storeKnownPlayers(players);
+            return { name: name, created: true };
+        }
+
+        function openPlayersModal() {
+            renderPlayersManager();
+            document.getElementById('players-modal').classList.remove('hidden');
+        }
+
+        function closePlayersModal() {
+            document.getElementById('players-modal').classList.add('hidden');
+            renderPlayerSelects(currentSelections());
+        }
+
+        function renderPlayersManager() {
+            const list = document.getElementById('players-manage-list');
+            const played = {};
+            try {
+                (JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]') || []).forEach(m => (m.players || []).forEach(p => {
+                    const k = (p.name || '').toLowerCase();
+                    played[k] = (played[k] || 0) + 1;
+                }));
+            } catch (e) {}
+            list.innerHTML = '';
+            const players = getKnownPlayers();
+            if (!players.length) {
+                list.innerHTML = '<p class="text-slate-500 text-center text-xs py-4">Aucun joueur.</p>';
+                return;
+            }
+            players.forEach(name => {
+                const n = played[name.toLowerCase()] || 0;
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-slate-950 border border-slate-800 rounded-lg px-3 py-2';
+                row.innerHTML = `<div><div class="text-sm font-semibold text-slate-100">${escapeHtml(name)}</div><div class="text-[11px] text-slate-500">${n} partie${n > 1 ? 's' : ''}</div></div>`;
+                const btn = document.createElement('button');
+                btn.className = 'text-red-400 hover:text-red-300 p-2';
+                btn.title = 'Supprimer';
+                btn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                btn.onclick = () => removeManagedPlayer(name);
+                row.appendChild(btn);
+                list.appendChild(row);
+            });
+        }
+
+        function addManagedPlayer() {
+            const input = document.getElementById('new-player-input');
+            const res = registerPlayer(input.value);
+            if (!res) return;
+            if (!res.created) showTemporaryToast(`"${res.name}" existe déjà`);
+            input.value = '';
+            renderPlayersManager();
+        }
+
+        // Also deletes every match the player took part in (opponents lose those matches from their stats too).
+        function removeManagedPlayer(name) {
+            const key = name.toLowerCase();
+            let matches = [];
+            try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]') || []; } catch (e) {}
+            const kept = matches.filter(m => !(m.players || []).some(p => (p.name || '').toLowerCase() === key));
+            const removed = matches.length - kept.length;
+            if (!confirm(`Supprimer "${name}" et ses ${removed} partie(s) de l'historique ? Cette action est définitive.`)) return;
+            try { localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(kept)); } catch (e) {}
+            const hidden = getHiddenPlayers();
+            hidden.push(key);
+            setHiddenPlayers(hidden);
+            storeKnownPlayers(getKnownPlayers());
+            renderPlayersManager();
+            renderHomePodium();
+        }
+
+        function addNewPlayer(idx) {
+            const raw = prompt('Nom du nouveau joueur :');
+            const name = (raw || '').trim();
+            if (!name) return;
+            setHiddenPlayers(getHiddenPlayers().filter(n => n !== name.toLowerCase()));
+            const players = getKnownPlayers();
+            let existing = players.find(p => p.toLowerCase() === name.toLowerCase());
+            if (existing) {
+                showTemporaryToast(`"${existing}" existe déjà`);
+            } else {
+                existing = name;
+                players.push(name);
+                storeKnownPlayers(players);
+            }
+            const names = [];
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const el = document.getElementById(`setup-p${i}-name`);
+                if (el) names[i] = el.value;
+            }
+            names[idx] = existing;
+            renderPlayerSelects(names);
+        }
+
+        let pendingStart = null;
+
+        function hasSavedGame() {
+            try {
+                const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+                return !!(s && s.players && s.players.length > 0);
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function startGame(mode, x01Base = 501) {
+            if (hasSavedGame()) {
+                pendingStart = [mode, x01Base];
+                document.getElementById('discard-modal').classList.remove('hidden');
+                return;
+            }
+            doStartGame(mode, x01Base);
+        }
+
+        function confirmDiscardAndStart() {
+            document.getElementById('discard-modal').classList.add('hidden');
+            const args = pendingStart;
+            pendingStart = null;
+            if (args) doStartGame(args[0], args[1]);
+        }
+
+        function cancelDiscard() {
+            pendingStart = null;
+            document.getElementById('discard-modal').classList.add('hidden');
+        }
+
+        function doStartGame(mode, x01Base = 501) {
+            const players = [];
+            const names = (settings.names || []).slice();
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const input = document.getElementById(`setup-p${i}-name`);
+                const name = (input && input.value.trim()) ? input.value.trim() : `Joueur ${i + 1}`;
+                names[i] = name;
+                players.push({
+                    id: i,
+                    name: name,
+                    score: mode === 'x01' ? x01Base : 0,
+                    legs: 0,
+                    pastTurns: [],
+                    turns: [], 
+                    dartHits: [],
+                    cricketMarks: {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0}
+                });
+            }
+
+            saveSettings(names);
+
+            gameState = {
+                mode: mode,
+                x01Base: x01Base,
+                legsToWin: selectedLegsToWin,
+                competition: isCompetition,
+                legStarter: 0,
+                doubleOut: isDoubleOut,
+                players: players,
+                activePlayerIndex: 0,
+                currentTurnDarts: [],
+                multiplier: 1,
+                history: [],
+                cricketLog: []
+            };
+
+            isGameActive = true;
+            document.getElementById('game-setup-screen').classList.add('hidden');
+            document.getElementById('active-game-screen').classList.remove('hidden');
+
+            if (mode === 'x01') {
+                document.getElementById('mode-x01-view').classList.remove('hidden');
+                document.getElementById('mode-cricket-view').classList.add('hidden');
+            } else {
+                document.getElementById('mode-x01-view').classList.add('hidden');
+                document.getElementById('mode-cricket-view').classList.remove('hidden');
+            }
+
+            saveStateToStorage();
+            updateUI();
+        }
+
+        function openSetupScreen() {
+            document.getElementById('active-game-screen').classList.add('hidden');
+            document.getElementById('game-setup-screen').classList.remove('hidden');
+            renderHomePodium();
+            checkSavedGameBanner();
+        }
+
+        function restartSameGame() {
+            closeWinnerModal();
+            startGame(gameState.mode, gameState.x01Base);
+        }
+
+        function saveStateForUndo() {
+            gameState.history.push(JSON.parse(JSON.stringify({
+                players: gameState.players,
+                activePlayerIndex: gameState.activePlayerIndex,
+                legStarter: gameState.legStarter,
+                currentTurnDarts: gameState.currentTurnDarts,
+                multiplier: gameState.multiplier
+            })));
+        }
+
+        function undoLastAction() {
+            if (gameState.history.length === 0) return;
+            const prev = gameState.history.pop();
+            gameState.players = prev.players;
+            gameState.activePlayerIndex = prev.activePlayerIndex;
+            gameState.legStarter = prev.legStarter;
+            gameState.currentTurnDarts = prev.currentTurnDarts;
+            gameState.multiplier = prev.multiplier;
+            if (gameState.mode !== 'x01' && gameState.cricketLog && gameState.cricketLog.length) gameState.cricketLog.pop();
+
+            saveStateToStorage();
+            updateUI();
+        }
+
+        function undoWin() {
+            if (gameState.lastMatchId) {
+                try {
+                    const matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+                    localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matches.filter(m => m.id !== gameState.lastMatchId)));
+                } catch (e) {}
+                gameState.lastMatchId = null;
+            }
+            closeWinnerModal();
+            isGameActive = true;
+            undoLastAction();
+            renderHomePodium();
+        }
+
+        function setMultiplier(m) {
+            gameState.multiplier = m;
+            updateMultiplierButtons();
+        }
+
+        function updateMultiplierButtons() {
+            [1, 2, 3].forEach(m => {
+                const btn = document.getElementById(`mult-${m}`);
+                const sel = {
+                    1: "bg-slate-100 text-slate-900 border border-white shadow-lg",
+                    2: "bg-emerald-500 text-slate-950 border border-emerald-300 shadow-lg shadow-emerald-900/40",
+                    3: "bg-red-600 text-white border border-red-400 shadow-lg shadow-red-900/40"
+                };
+                if (gameState.multiplier === m) {
+                    btn.className = `py-3 rounded-xl font-extrabold text-xs sm:text-sm active:scale-95 ${sel[m]}`;
+                } else {
+                    btn.className = "py-3 rounded-xl font-extrabold text-xs sm:text-sm bg-slate-800/80 text-slate-300 border border-slate-700 active:scale-95";
+                }
+            });
+        }
+
+        function throwX01Dart(baseValue) {
+            saveStateForUndo();
+
+            let mult = gameState.multiplier;
+            if (baseValue === 25 && mult === 3) mult = 2;
+            if (baseValue === 0) mult = 1;
+
+            const pts = baseValue * mult;
+            const player = gameState.players[gameState.activePlayerIndex];
+            const remaining = player.score;
+
+            let displayVal = baseValue === 0 ? 'MISS' : (baseValue === 25 ? (mult === 2 ? 'D-BULL' : 'BULL') : `${mult === 3 ? 'T' : (mult === 2 ? 'D' : '')}${baseValue}`);
+
+            player.dartHits.push({ val: baseValue, mult: mult });
+
+            if (remaining - pts < 0 || (gameState.doubleOut && remaining - pts === 1)) {
+                showTemporaryToast('BUST ! Tour annulé');
+                const turnPts = gameState.currentTurnDarts.reduce((a, b) => a + b.pts, 0);
+                player.score += turnPts;
+                
+                player.turns.push({
+                    round: player.turns.length + 1,
+                    points: 0,
+                    remainingScore: player.score,
+                    busted: true,
+                    darts: [...gameState.currentTurnDarts, { val: baseValue, mult: mult, pts: pts, display: displayVal }]
+                });
+
+                gameState.currentTurnDarts = [];
+                nextPlayerTurn();
+            } else if (remaining - pts === 0) {
+                if (!gameState.doubleOut || mult === 2 || (baseValue === 25 && mult === 2)) {
+                    player.score = 0;
+                    gameState.currentTurnDarts.push({ val: baseValue, mult: mult, pts: pts, display: displayVal });
+                    
+                    const totalTurnPts = gameState.currentTurnDarts.reduce((a, b) => a + b.pts, 0);
+                    player.turns.push({
+                        round: player.turns.length + 1,
+                        points: totalTurnPts,
+                        remainingScore: 0,
+                        busted: false,
+                        darts: [...gameState.currentTurnDarts]
+                    });
+
+                    handleLegWin(gameState.activePlayerIndex);
+                    return;
+                } else {
+                    showTemporaryToast('BUST ! Finir sur un Double');
+                    const turnPts = gameState.currentTurnDarts.reduce((a, b) => a + b.pts, 0);
+                    player.score += turnPts;
+
+                    player.turns.push({
+                        round: player.turns.length + 1,
+                        points: 0,
+                        remainingScore: player.score,
+                        busted: true,
+                        darts: [...gameState.currentTurnDarts, { val: baseValue, mult: mult, pts: pts, display: displayVal }]
+                    });
+
+                    gameState.currentTurnDarts = [];
+                    nextPlayerTurn();
+                }
+            } else {
+                player.score -= pts;
+                gameState.currentTurnDarts.push({ val: baseValue, mult: mult, pts: pts, display: displayVal });
+
+                if (gameState.currentTurnDarts.length >= 3) {
+                    const totalTurnPts = gameState.currentTurnDarts.reduce((a, b) => a + b.pts, 0);
+                    player.turns.push({
+                        round: player.turns.length + 1,
+                        points: totalTurnPts,
+                        remainingScore: player.score,
+                        busted: false,
+                        darts: [...gameState.currentTurnDarts]
+                    });
+
+                    gameState.currentTurnDarts = [];
+                    nextPlayerTurn();
+                }
+            }
+
+            gameState.multiplier = 1;
+            saveStateToStorage();
+            updateUI();
+        }
+
+        function submitQuickScore() {
+            const input = document.getElementById('quick-score-input');
+            const totalScore = parseInt(input.value);
+
+            if (isNaN(totalScore) || totalScore < 0 || totalScore > 180) {
+                showTemporaryToast('Score invalide (0 - 180)');
+                return;
+            }
+
+            saveStateForUndo();
+            const player = gameState.players[gameState.activePlayerIndex];
+
+            if (player.score - totalScore < 0 || (gameState.doubleOut && player.score - totalScore === 1)) {
+                showTemporaryToast('BUST !');
+                player.turns.push({
+                    round: player.turns.length + 1,
+                    points: 0,
+                    remainingScore: player.score,
+                    busted: true,
+                    darts: []
+                });
+            } else if (player.score - totalScore === 0) {
+                player.score = 0;
+                player.turns.push({
+                    round: player.turns.length + 1,
+                    points: totalScore,
+                    remainingScore: 0,
+                    busted: false,
+                    darts: []
+                });
+                handleLegWin(gameState.activePlayerIndex);
+                input.value = '';
+                return;
+            } else {
+                player.score -= totalScore;
+                player.turns.push({
+                    round: player.turns.length + 1,
+                    points: totalScore,
+                    remainingScore: player.score,
+                    busted: false,
+                    darts: []
+                });
+            }
+
+            input.value = '';
+            nextPlayerTurn();
+            saveStateToStorage();
+            updateUI();
+        }
+
+        function hitCricketTarget(playerIdx, target) {
+            saveStateForUndo();
+
+            if (gameState.activePlayerIndex !== playerIdx) {
+                gameState.activePlayerIndex = playerIdx;
+                gameState.currentTurnDarts = [];
+            }
+
+            const activePlayer = gameState.players[playerIdx];
+            const currentMarks = activePlayer.cricketMarks[target];
+
+            activePlayer.dartHits.push({ val: target, mult: 1 });
+
+            const label = target === 25 ? 'BULL' : target;
+            let logText;
+            let toast = null;
+
+            if (currentMarks < 3) {
+                activePlayer.cricketMarks[target]++;
+                logText = `${label} : marque ${activePlayer.cricketMarks[target]}/3`;
+            } else {
+                const pts = target;
+                logText = `${label} : cible déjà fermée, aucun point`;
+
+                if (gameState.mode === 'cricket') {
+                    const openOpponents = gameState.players.filter((p, idx) => idx !== playerIdx && p.cricketMarks[target] < 3);
+                    if (openOpponents.length > 0) {
+                        activePlayer.score += pts;
+                        logText = `${label} : +${pts} pts pour ${activePlayer.name}`;
+                        toast = `${activePlayer.name} marque +${pts} pts (${label})`;
+                    }
+                } else if (gameState.mode === 'cutthroat') {
+                    const receivers = [];
+                    gameState.players.forEach((p, idx) => {
+                        if (idx !== playerIdx && p.cricketMarks[target] < 3) {
+                            p.score += pts;
+                            receivers.push(p.name);
+                        }
+                    });
+                    if (receivers.length > 0) {
+                        logText = `${label} : +${pts} pts donnés à ${receivers.join(', ')}`;
+                        toast = `${activePlayer.name} donne +${pts} pts à ${receivers.join(', ')}`;
+                    }
+                }
+                if (!toast) toast = `${label} fermé par tous : aucun point`;
+            }
+
+            if (!gameState.cricketLog) gameState.cricketLog = [];
+            gameState.cricketLog.push({ time: new Date().toLocaleTimeString('fr-FR'), player: activePlayer.name, text: logText });
+            if (toast) showTemporaryToast(toast, '#059669');
+
+            checkCricketWinner();
+            if (isGameActive) saveStateToStorage();
+            updateUI();
+        }
+
+        function checkCricketWinner() {
+            const idx = gameState.players.findIndex(p => {
+                const closedAll = CRICKET_TARGETS.every(t => p.cricketMarks[t] >= 3);
+                if (!closedAll) return false;
+                return gameState.mode === 'cricket'
+                    ? gameState.players.every(op => p.score >= op.score)
+                    : gameState.players.every(op => p.score <= op.score);
+            });
+            if (idx >= 0) handleLegWin(idx);
+        }
+
+        function nextPlayerTurn() {
+            gameState.activePlayerIndex = (gameState.activePlayerIndex + 1) % gameState.players.length;
+            gameState.currentTurnDarts = [];
+        }
+
+        function renderX01Keypad() {
+            const grid = document.getElementById('keypad-x01-grid');
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= 20; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'bg-slate-800 active:bg-red-600 text-slate-100 font-bold h-12 rounded-xl border border-slate-700 text-lg shadow btn-active transition';
+                btn.innerText = i;
+                btn.onclick = () => throwX01Dart(i);
+                grid.appendChild(btn);
+            }
+
+            const missBtn = document.createElement('button');
+            missBtn.className = 'col-span-2 bg-slate-900 text-slate-400 font-bold h-12 rounded-xl border border-slate-800 text-sm btn-active transition';
+            missBtn.innerText = 'RATÉ (0)';
+            missBtn.onclick = () => throwX01Dart(0);
+
+            const bullBtn = document.createElement('button');
+            bullBtn.className = 'col-span-3 bg-red-950/60 active:bg-red-900 text-red-400 font-bold h-12 rounded-xl border border-red-800/50 text-sm btn-active transition';
+            bullBtn.innerText = 'BULL (25)';
+            bullBtn.onclick = () => throwX01Dart(25);
+
+            grid.appendChild(missBtn);
+            grid.appendChild(bullBtn);
+        }
+
+        function updateUI() {
+            document.getElementById('undo-btn').disabled = gameState.history.length === 0;
+
+            const modeNames = {
+                'x01': `X01 (${gameState.x01Base}${gameState.doubleOut ? ' - Double Out' : ''})`,
+                'cricket': 'Cricket Standard',
+                'cutthroat': 'Cricket Inversé'
+            };
+            document.getElementById('header-title').innerText = modeNames[gameState.mode] || 'Dart Master';
+            document.getElementById('header-subtitle').innerText = `${gameState.players.length} Joueur(s)`;
+
+            renderScoreboardCards();
+
+            if (gameState.mode === 'x01') {
+                updateMultiplierButtons();
+                renderTurnsHistory();
+            } else {
+                renderCricketTable();
+            }
+        }
+
+        function renderScoreboardCards() {
+            const container = document.getElementById('players-scoreboard');
+            const count = gameState.players.length;
+
+            if (count === 1) container.className = "grid grid-cols-1 gap-2";
+            else if (count === 2) container.className = "grid grid-cols-2 gap-2";
+            else if (count === 3) container.className = "grid grid-cols-3 gap-2";
+            else container.className = "grid grid-cols-2 sm:grid-cols-4 gap-2";
+
+            container.innerHTML = '';
+
+            gameState.players.forEach((p, idx) => {
+                const isActive = idx === gameState.activePlayerIndex;
+                const card = document.createElement('div');
+                const pColor = PLAYER_COLORS[idx % PLAYER_COLORS.length].main;
+
+                const activeBorder = isActive 
+                    ? `bg-slate-900 border-2 shadow-lg shadow-red-950/30` 
+                    : "bg-slate-900/60 border-2 border-slate-800/80";
+
+                card.className = `${activeBorder} rounded-2xl p-3 flex flex-col justify-between transition-all cursor-pointer`;
+                if (isActive) {
+                    card.style.borderColor = pColor;
+                    card.style.boxShadow = `0 0 0 1px ${pColor}55, 0 10px 28px -10px ${pColor}aa`;
+                }
+
+                card.onclick = () => {
+                    if (gameState.activePlayerIndex !== idx) {
+                        gameState.activePlayerIndex = idx;
+                        gameState.currentTurnDarts = [];
+                        updateUI();
+                    }
+                };
+
+                const currentTurnPts = isActive ? gameState.currentTurnDarts.reduce((sum, d) => sum + d.pts, 0) : 0;
+                const turnDarts = isActive ? renderDartsBadges(gameState.currentTurnDarts) : '';
+                
+                const validTurns = allTurns(p).filter(t => !t.busted);
+                const bump = lastScores[idx] !== undefined && lastScores[idx] !== p.score ? (gameState.mode === 'x01' ? 'bump' : 'bump-long') : '';
+                lastScores[idx] = p.score;
+                const legsBadge = (gameState.legsToWin || 1) > 1
+                    ? `<span class="text-[11px] bg-slate-800 border border-slate-700 rounded px-1.5 text-amber-400 font-bold">${p.legs || 0}/${gameState.legsToWin}</span>`
+                    : '';
+                const avgPPD = validTurns.length > 0 
+                    ? (validTurns.reduce((acc, t) => acc + t.points, 0) / validTurns.length).toFixed(1)
+                    : '0.0';
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-1">
+                        <span class="flex-1 min-w-0 text-center font-black text-base sm:text-xl truncate px-2 py-1.5 rounded-xl shadow-md ${isActive ? 'ring-2 ring-white/70' : 'opacity-75'}" style="background-color: ${pColor}; color: ${PLAYER_COLORS[idx % PLAYER_COLORS.length].text}">
+                            ${escapeHtml(p.name)}
+                        </span>
+                        ${legsBadge}<span class="w-2 h-2 rounded-full ${isActive ? 'animate-pulse' : 'bg-transparent'}" style="background-color: ${isActive ? pColor : 'transparent'}"></span>
+                    </div>
+                    <div class="my-1 text-center">
+                        <div class="score-num ${bump} text-4xl sm:text-5xl font-black tracking-tight ${isActive ? 'text-white' : 'text-slate-400'}">${p.score}</div>
+                        ${gameState.mode === 'x01' ? `
+                            <div class="text-xs text-slate-400 flex justify-center gap-2 mt-0.5">
+                                <span>Volée: <strong class="${isActive && currentTurnPts > 0 ? 'text-emerald-400' : 'text-slate-300'}">${isActive ? currentTurnPts : 0} pts</strong></span>
+                                <span>Moy: <strong class="text-amber-400">${avgPPD}</strong></span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="flex justify-center gap-1 h-5 items-center">
+                        ${turnDarts}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderTurnsHistory() {
+            const container = document.getElementById('turns-history-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            gameState.players.forEach(player => {
+                const pc = PLAYER_COLORS[player.id % PLAYER_COLORS.length];
+                const pBox = document.createElement('div');
+                pBox.className = 'bg-slate-950/60 p-2 rounded-lg border border-slate-800 text-xs';
+                
+                let turnsList = player.turns.map(t => {
+                    const stateClass = t.busted ? 'text-red-400 line-through' : 'text-slate-200 font-bold';
+                    return `<span class="bg-slate-900 border border-slate-800 px-1.5 py-0.5 rounded ${stateClass}">T${t.round}: ${t.points} pts</span>`;
+                }).reverse().join(' ');
+
+                if (!turnsList) {
+                    turnsList = '<span class="text-slate-600 italic">Aucun tour enregistré</span>';
+                }
+
+                pBox.innerHTML = `
+                    <div class="font-semibold text-slate-300 mb-1 flex justify-between">
+                        <span class="font-extrabold px-2 py-0.5 rounded-md" style="background-color: ${pc.main}; color: ${pc.text}">${escapeHtml(player.name)}</span>
+                        <span class="text-[10px] text-slate-400">${player.turns.length} volée(s)</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 max-h-16 overflow-y-auto">${turnsList}</div>
+                `;
+                container.appendChild(pBox);
+            });
+        }
+
+        function renderCricketTable() {
+            const headerRow = document.getElementById('cricket-header-row');
+            const rowsContainer = document.getElementById('cricket-rows');
+
+            const colCount = gameState.players.length + 1;
+            headerRow.style.gridTemplateColumns = `repeat(${colCount}, minmax(0, 1fr))`;
+
+            headerRow.innerHTML = `<div class="text-slate-400 font-black">Cible</div>`;
+            gameState.players.forEach((p, idx) => {
+                const isActive = idx === gameState.activePlayerIndex;
+                const pc = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+                headerRow.innerHTML += `<div class="font-black text-sm sm:text-base truncate rounded-lg py-1.5 mx-0.5 ${isActive ? 'shadow-lg ring-2 ring-white/70' : 'opacity-75'}" style="background-color: ${pc.main}; color: ${pc.text}">${escapeHtml(p.name)}</div>`;
+            });
+
+            rowsContainer.innerHTML = '';
+            CRICKET_TARGETS.forEach(target => {
+                const row = document.createElement('div');
+                row.className = 'grid py-1.5 px-1 text-center items-center divide-x divide-slate-800/60 transition';
+                row.style.gridTemplateColumns = `repeat(${colCount}, minmax(0, 1fr))`;
+
+                const targetLabel = target === 25 ? 'BULL' : target;
+                row.innerHTML = `<div class="font-extrabold text-slate-200 text-sm">${targetLabel}</div>`;
+
+                gameState.players.forEach((p, pIdx) => {
+                    const marks = p.cricketMarks[target];
+                    row.innerHTML += `
+                        <div class="px-1">
+                            <button onclick="hitCricketTarget(${pIdx}, ${target})" class="w-full bg-slate-800 hover:bg-slate-700 py-1 rounded-lg border border-slate-700 text-emerald-400 font-extrabold text-sm min-h-[48px] active:scale-95 transition">
+                                ${getCricketSymbol(marks)}
+                            </button>
+                        </div>
+                    `;
+                });
+                rowsContainer.appendChild(row);
+            });
+
+            const logBox = document.getElementById('cricket-log-container');
+            const log = gameState.cricketLog || [];
+            logBox.innerHTML = log.length === 0
+                ? '<span class="text-slate-600 italic">Aucun coup</span>'
+                : log.slice().reverse().map(e => `<div class="flex gap-2 bg-slate-950/60 border border-slate-800 rounded px-2 py-1"><span class="text-slate-500 shrink-0">${e.time}</span><span class="text-slate-200"><strong>${escapeHtml(e.player)}</strong> ${escapeHtml(e.text)}</span></div>`).join('');
+        }
+
+        function getCricketSymbol(count) {
+            if (count === 0) return '<span class="text-slate-600">-</span>';
+            if (count === 1) return '/';
+            if (count === 2) return 'X';
+            return '<span class="text-emerald-400 font-extrabold">⨂</span>';
+        }
+
+        function renderDartsBadges(darts) {
+            if (!darts || darts.length === 0) return '<span class="text-slate-600 text-[10px]">Lancer...</span>';
+            return darts.map((d, i) => `<span class="${i === darts.length - 1 ? 'dart-pop ' : ''}bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-md text-[11px] font-bold text-red-400">${d.display}</span>`).join('');
+        }
+
+        function declareWinner(name) {
+            isGameActive = false;
+            clearActiveGameStorage();
+            document.getElementById('winner-title').innerText = "Victoire !";
+            document.getElementById('winner-message').innerText = `${name} remporte la partie !`;
+            document.getElementById('winner-modal').classList.remove('hidden');
+        }
+
+        function closeWinnerModal() {
+            document.getElementById('winner-modal').classList.add('hidden');
+        }
+
+        function showTemporaryToast(msg, bg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-16 left-1/2 -translate-x-1/2 bg-red-600 text-white font-bold px-4 py-2 rounded-xl text-xs sm:text-sm shadow-xl z-50 transition opacity-100';
+            if (bg) toast.style.backgroundColor = bg;
+            toast.innerText = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 1800);
+        }
+
+        function saveStateToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+            } catch (e) {
+                console.warn('LocalStorage non disponible');
+            }
+        }
+
+        function loadSavedState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    gameState = JSON.parse(saved);
+                    if (gameState.players && gameState.players.length > 0) {
+                        selectedLegsToWin = gameState.legsToWin || 1;
+                        renderLegsButtons();
+                        if (gameState.mode === 'x01') {
+                            document.getElementById('mode-x01-view').classList.remove('hidden');
+                            document.getElementById('mode-cricket-view').classList.add('hidden');
+                        } else {
+                            document.getElementById('mode-x01-view').classList.add('hidden');
+                            document.getElementById('mode-cricket-view').classList.remove('hidden');
+                        }
+                        updateUI();
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Erreur lors du chargement');
+            }
+            return false;
+        }
+
+        function saveCompletedMatch(winnerName) {
+            if (gameState.competition === false) return;
+            try {
+                const savedMatches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+                const matchData = {
+                    id: Date.now(),
+                    date: new Date().toLocaleString('fr-FR'),
+                    rawMode: gameState.mode,
+                    mode: (gameState.mode === 'x01' ? `X01 (${gameState.x01Base}${gameState.doubleOut ? ' - D-Out' : ''})` : (gameState.mode === 'cutthroat' ? 'Cricket Inversé' : 'Cricket Standard')) + ((gameState.legsToWin || 1) > 1 ? ` · BO${2 * gameState.legsToWin - 1}` : ''),
+                    legsToWin: gameState.legsToWin || 1,
+                    x01Base: gameState.x01Base,
+                    winner: winnerName,
+                    players: gameState.players.map(p => ({
+                        name: p.name,
+                        score: p.score,
+                        legs: p.legs || 0,
+                        pastTurns: p.pastTurns || [],
+                        turns: p.turns || [],
+                        dartHits: p.dartHits || [],
+                        cricketMarks: p.cricketMarks || {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0}
+                    }))
+                };
+                savedMatches.unshift(matchData);
+                gameState.lastMatchId = matchData.id;
+                localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(savedMatches));
+            } catch (e) {
+                console.warn('Impossible de sauvegarder');
+            }
+        }
+
+        function switchHistoryTab(tab) {
+            activeHistoryTab = tab;
+            const colors = { x01: 'bg-red-600', cricket: 'bg-emerald-600', players: 'bg-amber-600' };
+            Object.keys(colors).forEach(t => {
+                document.getElementById(`hist-tab-${t}-btn`).className =
+                    `flex-1 py-1.5 text-xs font-bold rounded-lg transition ${t === tab ? colors[t] + ' text-white' : 'text-slate-400 hover:text-white'}`;
+                document.getElementById(`hist-tab-${t}-content`).classList.toggle('hidden', t !== tab);
+            });
+            if (tab === 'x01') setTimeout(() => renderGlobalEvolutionChart(), 50);
+        }
+
+        function deleteSingleMatch(matchId) {
+            if (confirm("Voulez-vous vraiment supprimer cette partie de l'historique ?")) {
+                try {
+                    let matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+                    matches = matches.filter(m => m.id !== matchId);
+                    localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matches));
+                    openHistoryModal();
+                    renderHomePodium();
+                    showTemporaryToast("Partie supprimée de l'historique");
+                } catch (e) {
+                    console.warn("Impossible de supprimer la partie", e);
+                }
+            }
+        }
+
+        function groupContainer(root, m, groups) {
+            const d = new Date(m.id);
+            const monthKey = `${root.id}|${d.getFullYear()}-${d.getMonth()}`;
+            if (!groups[monthKey]) {
+                const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                const det = document.createElement('details');
+                det.className = 'bg-slate-950 rounded-xl border border-slate-800';
+                det.open = !root.querySelector('details');
+                det.innerHTML = `
+                    <summary class="p-3 flex items-center justify-between cursor-pointer list-none">
+                        <span class="font-bold text-sm text-slate-100">${label.charAt(0).toUpperCase() + label.slice(1)}</span>
+                        <span class="flex items-center gap-2 text-xs text-slate-400"><span class="cnt"></span><i class="fa-solid fa-chevron-down chev transition"></i></span>
+                    </summary>
+                    <div class="body p-2 pt-0 space-y-3"></div>`;
+                root.appendChild(det);
+                groups[monthKey] = { det: det, body: det.querySelector('.body'), count: 0 };
+            }
+            const month = groups[monthKey];
+            month.count++;
+            month.det.querySelector('.cnt').innerText = `${month.count} partie${month.count > 1 ? 's' : ''}`;
+
+            const type = (m.rawMode === 'x01' || (m.mode && m.mode.startsWith('X01')))
+                ? `X01 · ${m.x01Base || 501}`
+                : (m.rawMode === 'cutthroat' || (m.mode && m.mode.includes('Inversé')) ? 'Cricket Inversé' : 'Cricket Standard');
+            const typeKey = `${monthKey}|${type}`;
+            if (!groups[typeKey]) {
+                const wrap = document.createElement('div');
+                wrap.innerHTML = `<h5 class="text-[11px] uppercase tracking-wider text-slate-500 font-bold px-1 pb-1.5">${type}</h5><div class="list space-y-2"></div>`;
+                month.body.appendChild(wrap);
+                groups[typeKey] = wrap.querySelector('.list');
+            }
+            return groups[typeKey];
+        }
+
+        function openHistoryModal() {
+            const containerX01 = document.getElementById('history-x01-list');
+            const containerCricket = document.getElementById('history-cricket-list');
+
+            containerX01.innerHTML = '';
+            containerCricket.innerHTML = '';
+            const groups = {};
+
+            try {
+                const matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+
+                const x01Matches = matches.filter(m => m.rawMode === 'x01' || (m.mode && m.mode.startsWith('X01')));
+                const cricketMatches = matches.filter(m => m.rawMode !== 'x01' && (!m.mode || !m.mode.startsWith('X01')));
+
+                // RENDER HISTORIQUE X01
+                if (x01Matches.length === 0) {
+                    containerX01.innerHTML = '<p class="text-slate-500 text-center text-xs py-4">Aucune partie X01 enregistrée.</p>';
+                } else {
+                    x01Matches.forEach((m) => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2';
+
+                        let playerStats = m.players.map(p => {
+                            const turnsAll = allTurns(p);
+                            const totalPts = turnsAll.reduce((acc, t) => acc + (t.busted ? 0 : t.points), 0);
+                            const avgPPD = turnsAll.length > 0 ? (totalPts / turnsAll.length).toFixed(1) : '0';
+
+                            return `
+                                <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-xs flex justify-between items-center">
+                                    <span class="font-semibold text-slate-200">${p.name} ${p.name === m.winner ? '🏆' : ''}${(m.legsToWin || 1) > 1 ? ` <span class="text-amber-400">(${p.legs || 0})</span>` : ''}</span>
+                                    <span class="text-amber-400 font-mono">Moy: ${avgPPD} pts/volée</span>
+                                </div>
+                            `;
+                        }).join('');
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-800/80 pb-1.5">
+                                <span class="font-bold text-red-400">${m.mode}</span>
+                                <div class="flex items-center gap-2">
+                                    <span>${m.date}</span>
+                                    <button onclick="deleteSingleMatch(${m.id})" class="text-slate-500 hover:text-red-400 p-1 transition" title="Supprimer la partie">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-1 pt-1">${playerStats}</div>
+                            <div class="pt-2 flex justify-end">
+                                <button onclick='viewSpecificMatchStatsFromHistory(${JSON.stringify(m).replace(/'/g, "&apos;")})' class="bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-semibold flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-chart-pie"></i> Analyser / Cible
+                                </button>
+                            </div>
+                        `;
+                        groupContainer(containerX01, m, groups).appendChild(card);
+                    });
+                }
+
+                // RENDER HISTORIQUE CRICKET
+                if (cricketMatches.length === 0) {
+                    containerCricket.innerHTML = '<p class="text-slate-500 text-center text-xs py-4">Aucune partie Cricket enregistrée.</p>';
+                } else {
+                    cricketMatches.forEach((m) => {
+                        const card = document.createElement('div');
+                        card.className = 'bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2.5';
+
+                        const scores = m.players.map(p => p.score);
+                        const maxScore = Math.max(...scores);
+                        const minScore = Math.min(...scores);
+                        const scoreDiff = maxScore - minScore;
+
+                        let playerDetails = m.players.map(p => {
+                            const isWinner = (p.name === m.winner);
+                            const marks = p.cricketMarks || {};
+                            
+                            let missingTargets = 0;
+                            CRICKET_TARGETS.forEach(t => {
+                                if ((marks[t] || 0) < 3) missingTargets++;
+                            });
+
+                            const scoreClass = isWinner ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
+
+                            return `
+                                <div class="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800/80 flex justify-between items-center text-xs">
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-slate-200">${p.name} ${isWinner ? '🏆' : ''}${(m.legsToWin || 1) > 1 ? ` <span class="text-amber-400">(${p.legs || 0})</span>` : ''}</span>
+                                        <span class="text-[10px] text-slate-400">
+                                            ${isWinner ? 'Toutes cibles fermées' : `<span class="text-amber-400 font-semibold">${missingTargets} cible(s) manquante(s)</span>`}
+                                        </span>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="${scoreClass} text-sm">${p.score} pts</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5">
+                                <span class="font-bold text-emerald-400">${m.mode}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 text-[11px]">${m.date}</span>
+                                    <button onclick="deleteSingleMatch(${m.id})" class="text-slate-500 hover:text-red-400 p-1 transition" title="Supprimer la partie">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">${playerDetails}</div>
+                            <div class="flex justify-between items-center pt-1 text-xs">
+                                <span class="text-slate-400 text-[11px] bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                                    Écart de score: <strong class="text-amber-400">${scoreDiff} pts</strong>
+                                </span>
+                                <button onclick='viewSpecificMatchStatsFromHistory(${JSON.stringify(m).replace(/'/g, "&apos;")})' class="bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-semibold flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-bullseye"></i> Cible
+                                </button>
+                            </div>
+                        `;
+                        groupContainer(containerCricket, m, groups).appendChild(card);
+                    });
+                }
+
+            } catch (e) {
+                containerX01.innerHTML = '<p class="text-red-400 text-center text-xs py-4">Erreur d\'historique.</p>';
+            }
+
+            document.getElementById('history-modal').classList.remove('hidden');
+            renderPlayersStats();
+            switchHistoryTab(activeHistoryTab);
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.add('hidden');
+        }
+
+        function clearSavedHistory() {
+            if (confirm("Voulez-vous vraiment effacer tout l'historique des parties ?")) {
+                localStorage.removeItem(MATCH_HISTORY_KEY);
+                openHistoryModal();
+                renderHomePodium();
+            }
+        }
+
+        /* STATS & DARTBOARD LOGIC */
+
+        function openCurrentGameStats() {
+            isViewingFromHistory = false;
+            const playerNames = gameState.players.map(p => p.name).join(' vs ');
+            const modeName = gameState.mode === 'x01' ? `X01 (${gameState.x01Base}${gameState.doubleOut ? ' - D-Out' : ''})` : (gameState.mode === 'cutthroat' ? 'Cricket Inversé' : 'Cricket Standard');
+            
+            currentViewingMatch = {
+                title: `Partie EN COURS : ${modeName} (${playerNames})`,
+                mode: modeName,
+                rawMode: gameState.mode,
+                x01Base: gameState.x01Base,
+                players: gameState.players
+            };
+            showStatsModal();
+        }
+
+        function viewSpecificMatchStatsFromHistory(m) {
+            isViewingFromHistory = true;
+            viewSpecificMatchStats(m);
+        }
+
+        function viewSpecificMatchStats(m) {
+            closeHistoryModal();
+            if (m) {
+                const playerNames = m.players.map(p => p.name).join(' vs ');
+                currentViewingMatch = {
+                    title: `Partie du ${m.date} : ${m.mode} (${playerNames})`,
+                    mode: m.mode,
+                    rawMode: m.rawMode || (m.mode.startsWith('X01') ? 'x01' : 'cricket'),
+                    x01Base: m.x01Base,
+                    players: m.players
+                };
+                showStatsModal();
+            }
+        }
+
+        function showStatsModal() {
+            if (!currentViewingMatch) return;
+
+            document.getElementById('stats-modal-match-info').innerText = currentViewingMatch.title;
+
+            const playerSelect = document.getElementById('board-player-select');
+            playerSelect.innerHTML = '<option value="all">Tous les joueurs</option>';
+            currentViewingMatch.players.forEach((p, idx) => {
+                playerSelect.innerHTML += `<option value="${idx}">${p.name}</option>`;
+            });
+
+            const evolutionBox = document.getElementById('score-evolution-box');
+            if (currentViewingMatch.rawMode === 'x01') {
+                evolutionBox.classList.remove('hidden');
+                setTimeout(() => renderScoreEvolutionChart(), 50);
+            } else {
+                evolutionBox.classList.add('hidden');
+            }
+
+            setTimeout(() => drawDartboardHits(), 50);
+            document.getElementById('stats-modal').classList.remove('hidden');
+        }
+
+        function closeStatsModal() {
+            document.getElementById('stats-modal').classList.add('hidden');
+            if (isViewingFromHistory) {
+                isViewingFromHistory = false;
+                openHistoryModal();
+            }
+        }
+
+        function renderScoreEvolutionChart() {
+            const container = document.getElementById('scoreChartContainer');
+            container.innerHTML = '<canvas id="scoreChart"></canvas>';
+
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            if (activeChart) activeChart.destroy();
+
+            let maxRounds = 0;
+            currentViewingMatch.players.forEach(p => {
+                if (p.turns && p.turns.length > maxRounds) maxRounds = p.turns.length;
+            });
+
+            const labels = Array.from({ length: maxRounds + 1 }, (_, i) => i === 0 ? 'Départ' : `T${i}`);
+
+            const datasets = currentViewingMatch.players.map((player, idx) => {
+                const data = [];
+                let initialScore = currentViewingMatch.x01Base || 501;
+                data.push(initialScore);
+
+                let currentScore = initialScore;
+                (player.turns || []).forEach(t => {
+                    if (t.remainingScore !== undefined) {
+                        currentScore = t.remainingScore;
+                    } else if (!t.busted) {
+                        currentScore -= t.points;
+                    }
+                    data.push(currentScore);
+                });
+
+                const colorConfig = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+
+                return {
+                    label: player.name,
+                    data: data,
+                    borderColor: colorConfig.main,
+                    backgroundColor: colorConfig.main + '20',
+                    borderWidth: 3,
+                    tension: 0.2,
+                    pointRadius: 4
+                };
+            });
+
+            activeChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 12 } } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+        }
+
+        function renderGlobalEvolutionChart() {
+            const container = document.getElementById('globalChartContainer');
+            const matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
+            
+            const x01Matches = matches.filter(m => m.rawMode === 'x01' || (m.mode && m.mode.startsWith('X01'))).reverse();
+
+            if (x01Matches.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-xs italic text-center">Aucune partie X01 dans l\'historique.</p>';
+                return;
+            } else {
+                container.innerHTML = '<canvas id="globalScoreChart"></canvas>';
+            }
+
+            const ctx = document.getElementById('globalScoreChart').getContext('2d');
+            if (globalChart) globalChart.destroy();
+
+            const labels = x01Matches.map((m, idx) => `P${idx + 1}`);
+            const playerMap = {};
+
+            x01Matches.forEach((m, matchIdx) => {
+                m.players.forEach(p => {
+                    if (!playerMap[p.name]) {
+                        playerMap[p.name] = Array(x01Matches.length).fill(null);
+                    }
+                    const turnsAll = allTurns(p);
+                    const totalPts = turnsAll.reduce((acc, t) => acc + (t.busted ? 0 : t.points), 0);
+                    const avg = turnsAll.length > 0 ? (totalPts / turnsAll.length) : 0;
+                    playerMap[p.name][matchIdx] = parseFloat(avg.toFixed(1));
+                });
+            });
+
+            const datasets = Object.keys(playerMap).map((name, idx) => {
+                const colorConfig = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+                return {
+                    label: name,
+                    data: playerMap[name],
+                    borderColor: colorConfig.main,
+                    backgroundColor: colorConfig.main + '20',
+                    borderWidth: 2,
+                    spanGaps: true,
+                    tension: 0.2,
+                    pointRadius: 4
+                };
+            });
+
+            globalChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#cbd5e1', font: { size: 10 } } },
+                        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label} : ${ctx.raw} PPD` } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#334155' } },
+                        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+        }
+
+        function drawDartboardHits() {
+            const canvas = document.getElementById('dartboardCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const center = width / 2;
+            const radius = width * 0.41;
+
+            ctx.clearRect(0, 0, width, width);
+
+            const selectedIdx = document.getElementById('board-player-select').value;
+            const hitsMap = {};
+
+            currentViewingMatch.players.forEach((p, pIdx) => {
+                if (selectedIdx !== 'all' && parseInt(selectedIdx) !== pIdx) return;
+
+                (p.dartHits || []).forEach(hit => {
+                    const key = `${hit.val}_x${hit.mult || 1}`;
+                    if (!hitsMap[key]) hitsMap[key] = {};
+                    hitsMap[key][pIdx] = (hitsMap[key][pIdx] || 0) + 1;
+                });
+            });
+
+            const rDoubleOuter = radius;
+            const rDoubleInner = radius * 0.9;
+            const rTripleOuter = radius * 0.6;
+            const rTripleInner = radius * 0.5;
+            const rBullOuter = radius * 0.15;
+            const rBullInner = radius * 0.07;
+
+            ctx.beginPath();
+            ctx.arc(center, center, radius * 1.1, 0, 2 * Math.PI);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+
+            const sectorAngle = (2 * Math.PI) / 20;
+            const angleOffset = -Math.PI / 2 - sectorAngle / 2;
+
+            SECTORS_ORDER.forEach((val, idx) => {
+                const startAngle = angleOffset + idx * sectorAngle;
+                const endAngle = startAngle + sectorAngle;
+                const isEven = idx % 2 === 0;
+
+                const cSingle = isEven ? '#1e293b' : '#fef3c7';
+                const cSpecial = isEven ? '#b91c1c' : '#15803d';
+
+                drawStandardArcSector(ctx, center, rDoubleInner, rTripleOuter, startAngle, endAngle, cSingle);
+                drawStandardArcSector(ctx, center, rTripleInner, rBullOuter, startAngle, endAngle, cSingle);
+
+                drawStandardArcSector(ctx, center, rDoubleOuter, rDoubleInner, startAngle, endAngle, cSpecial);
+                drawStandardArcSector(ctx, center, rTripleOuter, rTripleInner, startAngle, endAngle, cSpecial);
+
+                const numAngle = startAngle + sectorAngle / 2;
+                const numR = radius * 1.04;
+                const nx = center + numR * Math.cos(numAngle);
+                const ny = center + numR * Math.sin(numAngle);
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(val, nx, ny);
+            });
+
+            ctx.beginPath();
+            ctx.arc(center, center, rBullOuter, 0, 2 * Math.PI);
+            ctx.fillStyle = '#15803d';
+            ctx.fill();
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(center, center, rBullInner, 0, 2 * Math.PI);
+            ctx.fillStyle = '#b91c1c';
+            ctx.fill();
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            SECTORS_ORDER.forEach((val, idx) => {
+                const startAngle = angleOffset + idx * sectorAngle;
+                const endAngle = startAngle + sectorAngle;
+
+                drawPlayerHitBadges(ctx, center, (rDoubleInner + rTripleOuter) / 2, startAngle, endAngle, hitsMap[`${val}_x1`]);
+                drawPlayerHitBadges(ctx, center, (rDoubleOuter + rDoubleInner) / 2, startAngle, endAngle, hitsMap[`${val}_x2`]);
+                drawPlayerHitBadges(ctx, center, (rTripleOuter + rTripleInner) / 2, startAngle, endAngle, hitsMap[`${val}_x3`]);
+            });
+
+            drawPlayerHitBadgesCenter(ctx, center, center, (rBullOuter + rBullInner) / 2, hitsMap['25_x1']);
+            drawPlayerHitBadgesCenter(ctx, center, center, 0, hitsMap['25_x2']);
+        }
+
+        function drawStandardArcSector(ctx, center, rOuter, rInner, startAngle, endAngle, fillColor) {
+            ctx.beginPath();
+            ctx.arc(center, center, rOuter, startAngle, endAngle, false);
+            ctx.arc(center, center, rInner, endAngle, startAngle, true);
+            ctx.closePath();
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function drawPlayerHitBadges(ctx, center, midRadius, startAngle, endAngle, playerHits) {
+            if (!playerHits) return;
+
+            const pIndexes = Object.keys(playerHits);
+            if (pIndexes.length === 0) return;
+
+            const midAngle = (startAngle + endAngle) / 2;
+
+            pIndexes.forEach((pIdx, i) => {
+                const count = playerHits[pIdx];
+                const colorConfig = PLAYER_COLORS[parseInt(pIdx) % PLAYER_COLORS.length];
+
+                const offset = (i - (pIndexes.length - 1) / 2) * 11;
+                const bx = center + midRadius * Math.cos(midAngle) + offset * Math.cos(midAngle + Math.PI/2);
+                const by = center + midRadius * Math.sin(midAngle) + offset * Math.sin(midAngle + Math.PI/2);
+
+                drawHitBadge(ctx, bx, by, count, colorConfig.main, colorConfig.text);
+            });
+        }
+
+        function drawPlayerHitBadgesCenter(ctx, cx, cy, radiusOffset, playerHits) {
+            if (!playerHits) return;
+
+            const pIndexes = Object.keys(playerHits);
+            if (pIndexes.length === 0) return;
+
+            pIndexes.forEach((pIdx, i) => {
+                const count = playerHits[pIdx];
+                const colorConfig = PLAYER_COLORS[parseInt(pIdx) % PLAYER_COLORS.length];
+
+                const angle = (i * (2 * Math.PI / pIndexes.length));
+                const bx = cx + radiusOffset * Math.cos(angle);
+                const by = cy + radiusOffset * Math.sin(angle);
+
+                drawHitBadge(ctx, bx, by, count, colorConfig.main, colorConfig.text);
+            });
+        }
+
+        function drawHitBadge(ctx, x, y, count, bgColor, textColor) {
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, 2 * Math.PI);
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = textColor;
+            ctx.font = 'black 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(count, x, y);
+        }
+    </script>
+</body>
+</html>
