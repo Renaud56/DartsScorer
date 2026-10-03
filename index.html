@@ -330,16 +330,11 @@
                 <button onclick="syncDriveClick()" id="drive-sync-btn" class="w-full bg-slate-800 active:bg-emerald-700 border border-slate-700 py-3 rounded-xl text-sm font-semibold text-emerald-300 flex items-center justify-center gap-2">
                     <i class="fa-brands fa-google-drive"></i> Se connecter à Google Drive
                 </button>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="selectDriveBackup()" class="bg-slate-800 active:bg-sky-700 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold text-sky-300 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-folder-open"></i> Choisir le fichier partagé
-                    </button>
-                    <button onclick="createDriveBackup()" class="bg-slate-800 active:bg-amber-700 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold text-amber-300 flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-file-circle-plus"></i> Créer une sauvegarde
-                    </button>
-                </div>
-                <p id="drive-sync-status" role="status" class="text-[11px] text-slate-400">Synchronisation Drive désactivée</p>
-                <p class="text-[11px] text-slate-500">Une connexion Google est nécessaire. L’historique, la partie en cours, les joueurs et les réglages sont synchronisés.</p>
+                <button onclick="selectDriveBackup()" id="drive-select-file-btn" class="hidden w-full bg-slate-800 active:bg-sky-700 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold text-sky-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-folder-open"></i> Choisir le fichier partagé
+                </button>
+                <p id="drive-sync-status" role="status" class="text-[11px] text-slate-400">Synchronisation Google Drive désactivée</p>
+                <p class="text-[11px] text-slate-500">Sans Google Drive, vos données restent enregistrées dans le stockage local de ce navigateur (pas dans les cookies) et ne sont pas partagées entre appareils. Utilisez Exporter pour en conserver une copie.</p>
             </div>
         </div>
 
@@ -2979,6 +2974,7 @@
         let driveTokenClient = null;
         let driveAccessToken = null;
         let driveTokenExpiresAt = 0;
+        let driveTokenExpiryTimer = null;
         let driveSyncTimer = null;
         let driveSyncBusy = false;
         let driveSyncAgain = false;
@@ -2986,11 +2982,17 @@
         let drivePickerReady = false;
         let drivePickerLoadPending = false;
 
+        function updateDrivePickerButton() {
+            const button = document.getElementById('drive-select-file-btn');
+            if (button) button.classList.toggle('hidden', !driveAccessToken || Date.now() >= driveTokenExpiresAt);
+        }
+
         function setDriveStatus(message, connected) {
             const status = document.getElementById('drive-sync-status');
             const button = document.getElementById('drive-sync-btn');
             if (status) status.innerText = message;
             if (button) button.innerHTML = `<i class="fa-brands fa-google-drive"></i> ${connected ? 'Synchroniser maintenant' : 'Se connecter à Google Drive'}`;
+            updateDrivePickerButton();
         }
 
         function markDriveChanged(kind) {
@@ -3106,16 +3108,24 @@
                     }
                     driveAccessToken = response.access_token;
                     driveTokenExpiresAt = Date.now() + (response.expires_in - 60) * 1000;
+                    clearTimeout(driveTokenExpiryTimer);
+                    driveTokenExpiryTimer = setTimeout(() => {
+                        driveAccessToken = null;
+                        driveTokenExpiresAt = 0;
+                        setDriveStatus('Reconnexion requise : touchez le bouton', false);
+                    }, Math.max(0, driveTokenExpiresAt - Date.now()));
+                    updateDrivePickerButton();
                     localStorage.setItem(DRIVE_ENABLED_KEY, '1');
                     const action = drivePendingAction;
                     drivePendingAction = 'sync';
                     if (action === 'pick') showDrivePicker();
-                    else if (action === 'create') createDriveBackupNow();
                     else syncDriveNow();
                 },
                 error_callback: () => setDriveStatus('Reconnexion requise : touchez le bouton', false)
             });
-            if (localStorage.getItem(DRIVE_ENABLED_KEY) === '1') driveTokenClient.requestAccessToken({ prompt: '' });
+            if (localStorage.getItem(DRIVE_ENABLED_KEY) === '1') {
+                setDriveStatus('Reconnexion requise : touchez le bouton', false);
+            }
         }
 
         function syncDriveClick() {
@@ -3135,11 +3145,6 @@
         function selectDriveBackup() {
             if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) requestDriveToken('pick');
             else showDrivePicker();
-        }
-
-        function createDriveBackup() {
-            if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) requestDriveToken('create');
-            else createDriveBackupNow();
         }
 
         function pickerApiLoaded() {
@@ -3189,25 +3194,6 @@
             syncDriveNow();
         }
 
-        async function createDriveBackupNow() {
-            if (localStorage.getItem(DRIVE_FILE_ID_KEY) && !confirm('Créer un nouveau fichier de sauvegarde distinct ?')) return;
-            try {
-                const boundary = 'dartmasterboundary';
-                const snapshot = driveSnapshot();
-                const response = await driveApi('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                    method: 'POST',
-                    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
-                    body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: DRIVE_FILENAME, mimeType: 'application/json' })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(snapshot)}\r\n--${boundary}--`
-                });
-                const created = await response.json();
-                localStorage.setItem(DRIVE_FILE_ID_KEY, created.id);
-                syncDriveNow();
-            } catch (error) {
-                setDriveStatus('Impossible de créer la sauvegarde Drive', false);
-                console.warn('Création Google Drive impossible', error);
-            }
-        }
-
         function scheduleDriveSync() {
             if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) return;
             clearTimeout(driveSyncTimer);
@@ -3241,7 +3227,7 @@
             try {
                 const fileId = localStorage.getItem(DRIVE_FILE_ID_KEY);
                 if (!fileId) {
-                    setDriveStatus('Choisis le fichier partagé ou crée une sauvegarde', false);
+                    setDriveStatus('Choisis le fichier partagé pour démarrer la synchronisation', false);
                     return;
                 }
                 const remote = await (await driveApi(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`)).json();
