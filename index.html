@@ -262,35 +262,55 @@
                     </div>
                 </div>
 
-                <button onclick="startGame('cricket')" class="bg-gradient-to-br from-slate-900 to-slate-800 hover:from-slate-800 border border-slate-700 hover:border-emerald-500 p-4 rounded-2xl flex flex-col justify-between text-left transition group shadow-xl">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
-                            <i class="fa-solid fa-bullseye"></i>
+                <div class="relative h-full bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-xl">
+                    <button type="button" onclick="startGame('cricket')" aria-label="Lancer Cricket Standard" class="absolute inset-0 z-0 w-full rounded-2xl border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:ring-emerald-400"></button>
+                    <div class="relative z-10 pointer-events-none h-full flex flex-col justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400 text-lg">
+                                <i class="fa-solid fa-bullseye"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-100 text-sm">Cricket Standard</h4>
+                                <p class="text-[11px] text-slate-400">15-20 + Bull. Vous marquez vos points.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-slate-100 text-sm">Cricket Standard</h4>
-                            <p class="text-[11px] text-slate-400">15-20 + Bull. Vous marquez vos points.</p>
-                        </div>
+                        <span class="text-xs font-bold text-emerald-400 pt-1 flex items-center justify-between">
+                            Lancer Cricket Standard <i class="fa-solid fa-arrow-right"></i>
+                        </span>
                     </div>
-                    <span class="text-xs font-bold text-emerald-400 pt-3 flex items-center justify-between">
-                        Lancer Cricket Standard <i class="fa-solid fa-arrow-right"></i>
-                    </span>
-                </button>
+                    <div class="relative z-20 bg-slate-950/70 p-2 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs text-slate-300 font-semibold">Saisie rapide</span>
+                            <button type="button" onclick="event.stopPropagation(); toggleCricketSimpleMode()" id="cricket-simple-toggle-standard" class="pointer-events-auto bg-slate-800 border border-slate-700 text-slate-400 font-bold px-2.5 py-1 rounded-lg text-xs transition">NON</button>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1">OUI : 1 clic par marque · NON : détail des 3 fléchettes</p>
+                    </div>
+                </div>
 
-                <button onclick="startGame('cutthroat')" class="bg-gradient-to-br from-slate-900 to-slate-800 hover:from-slate-800 border border-slate-700 hover:border-amber-500 p-4 rounded-2xl flex flex-col justify-between text-left transition group shadow-xl">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg">
-                            <i class="fa-solid fa-skull"></i>
+                <div class="relative h-full bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 p-4 rounded-2xl flex flex-col justify-between gap-3 shadow-xl">
+                    <button type="button" onclick="startGame('cutthroat')" aria-label="Lancer Cricket Inversé" class="absolute inset-0 z-0 w-full rounded-2xl border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:ring-amber-400"></button>
+                    <div class="relative z-10 pointer-events-none h-full flex flex-col justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-400 text-lg">
+                                <i class="fa-solid fa-skull"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-100 text-sm">Cricket Inversé</h4>
+                                <p class="text-[11px] text-slate-400">Cut-Throat: Points attribués aux adversaires.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="font-bold text-slate-100 text-sm">Cricket Inversé</h4>
-                            <p class="text-[11px] text-slate-400">Cut-Throat: Points attribués aux adversaires.</p>
-                        </div>
+                        <span class="text-xs font-bold text-amber-400 pt-1 flex items-center justify-between">
+                            Lancer Cricket Inversé <i class="fa-solid fa-arrow-right"></i>
+                        </span>
                     </div>
-                    <span class="text-xs font-bold text-amber-400 pt-3 flex items-center justify-between">
-                        Lancer Cricket Inversé <i class="fa-solid fa-arrow-right"></i>
-                    </span>
-                </button>
+                    <div class="relative z-20 bg-slate-950/70 p-2 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs text-slate-300 font-semibold">Saisie rapide</span>
+                            <button type="button" onclick="event.stopPropagation(); toggleCricketSimpleMode()" id="cricket-simple-toggle-cutthroat" class="pointer-events-auto bg-slate-800 border border-slate-700 text-slate-400 font-bold px-2.5 py-1 rounded-lg text-xs transition">NON</button>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1">OUI : 1 clic par marque · NON : détail des 3 fléchettes</p>
+                    </div>
+                </div>
             </div>
 
             <!-- BACKUP -->
@@ -342,6 +362,15 @@
 
             <!-- MODE CRICKET / CUT-THROAT VIEW -->
             <div id="mode-cricket-view" class="hidden flex-1 flex flex-col gap-2">
+                <div id="cricket-advanced-controls" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button id="cricket-mult-1" onclick="setCricketMultiplier(1)" class="py-2 rounded-lg text-[11px] font-extrabold bg-slate-800 text-slate-200 border border-slate-700">SIMPLE</button>
+                        <button id="cricket-mult-2" onclick="setCricketMultiplier(2)" class="py-2 rounded-lg text-[11px] font-extrabold bg-slate-800 text-slate-200 border border-slate-700">DOUBLE</button>
+                        <button id="cricket-mult-3" onclick="setCricketMultiplier(3)" class="py-2 rounded-lg text-[11px] font-extrabold bg-slate-800 text-slate-200 border border-slate-700">TRIPLE</button>
+                        <button onclick="registerCricketMiss()" class="py-2 rounded-lg text-[11px] font-extrabold bg-slate-950 text-slate-300 border border-slate-700">RATÉ</button>
+                    </div>
+                    <div id="cricket-turn-progress" class="text-center text-xs text-amber-300 font-bold" aria-live="polite"></div>
+                </div>
                 <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
                     <div id="cricket-header-row" class="grid bg-slate-950 py-2.5 px-2 text-xs font-bold text-slate-300 text-center border-b border-slate-800 divide-x divide-slate-800"></div>
                     <div id="cricket-rows" class="divide-y divide-slate-800/80"></div>
@@ -400,6 +429,46 @@
         </div>
     </div>
 
+    <div id="add-player-modal" role="dialog" aria-modal="true" aria-labelledby="add-player-title" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 id="add-player-title" class="text-lg font-bold text-white">Ajouter un joueur</h3>
+                <button type="button" onclick="closeAddPlayerModal()" class="text-slate-400 hover:text-white p-1" aria-label="Fermer">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div>
+                <label for="add-player-name" class="block text-xs font-semibold text-slate-400 mb-1.5">Nom du joueur</label>
+                <input id="add-player-name" type="text" maxlength="30" autocomplete="off" placeholder="Ex. Camille" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-slate-100 text-sm font-semibold focus:outline-none focus:border-emerald-500" onkeydown="if(event.key==='Enter')confirmAddNewPlayer()" oninput="document.getElementById('add-player-error').classList.add('hidden')">
+                <p id="add-player-error" class="hidden text-red-400 text-xs mt-1.5" aria-live="polite"></p>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="closeAddPlayerModal()" class="bg-slate-800 border border-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-lg text-sm">Annuler</button>
+                <button type="button" onclick="confirmAddNewPlayer()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-sm">Ajouter</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-player-modal" role="dialog" aria-modal="true" aria-labelledby="delete-player-title" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-red-500/30 rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 shrink-0 bg-red-500/15 text-red-400 border border-red-500/30 rounded-full flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+                <h3 id="delete-player-title" class="text-lg font-bold text-white">Supprimer ce joueur ?</h3>
+            </div>
+            <p class="text-sm text-slate-300">
+                Le joueur <strong id="delete-player-name" class="text-white"></strong> et
+                <strong id="delete-player-match-count" class="text-red-300"></strong>
+                de son historique seront supprimés. Cette action est définitive.
+            </p>
+            <div class="flex justify-end gap-2">
+                <button type="button" onclick="cancelManagedPlayerRemoval()" class="bg-slate-800 border border-slate-700 text-slate-300 font-semibold px-4 py-2 rounded-lg text-sm">Annuler</button>
+                <button type="button" onclick="confirmManagedPlayerRemoval()" class="bg-red-600 hover:bg-red-500 text-white font-bold px-4 py-2 rounded-lg text-sm">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Discard Modal -->
     <div id="discard-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
@@ -430,13 +499,21 @@
 
     <!-- Winner Modal -->
     <div id="winner-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="winner-dialog bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+        <div class="winner-dialog bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm max-h-[90vh] w-full overflow-y-auto text-center shadow-2xl space-y-4">
             <div class="relative w-16 h-16 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-3xl pop-once">
                 <i class="fa-solid fa-trophy"></i>
                 <i class="fa-solid fa-crown winner-crown" aria-hidden="true"></i>
             </div>
             <h3 class="text-2xl font-black text-white" id="winner-title">Victoire !</h3>
             <p class="text-slate-300 text-sm" id="winner-message"><span class="winner-name"></span><span class="winner-caption">remporte la partie !</span></p>
+            <div id="winner-cricket-summary" class="hidden bg-slate-950 border border-amber-500/25 rounded-xl p-3 space-y-2 text-left">
+                <h4 class="text-[11px] uppercase tracking-wider font-bold text-amber-300">Résultats Cricket</h4>
+                <div class="grid grid-cols-[minmax(0,1fr)_3.5rem_4rem_4.5rem] gap-1 text-[9px] uppercase tracking-wider text-slate-500 font-bold px-1">
+                    <span>Joueur</span><span class="text-center">MPR</span><span class="text-right">Score</span><span class="text-right">Écart</span>
+                </div>
+                <div id="winner-cricket-players" class="space-y-1"></div>
+                <p class="text-[9px] text-slate-500 text-right">Écart par rapport au gagnant</p>
+            </div>
             <div class="pt-2 flex flex-col gap-2">
                 <button onclick="undoWin()" class="w-full bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/40 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-rotate-left"></i> Retour (annuler le dernier coup)
@@ -578,6 +655,8 @@
         let selectedPlayerCount = 2;
         let isDoubleOut = false;
         let isGameActive = false;
+        let pendingNewPlayerIdx = null;
+        let pendingPlayerRemovalName = null;
         let activeHistoryTab = 'x01';
         let isViewingFromHistory = false;
         let gameState = {
@@ -593,6 +672,8 @@
 
         let activeChart = null;
         let globalChart = null;
+        let playerEvolutionCharts = [];
+        let playerEvolutionData = null;
         let currentViewingMatch = null;
 
         window.onload = function() {
@@ -601,14 +682,17 @@
             renderLegsButtons();
             renderCompetitionButtons();
             renderDoubleOutBtn();
+            renderCricketSimpleModeButtons();
             renderX01Keypad();
             openSetupScreen();
+            initAppBackNavigation();
         };
 
         const SETTINGS_KEY = 'dart_scoreboard_settings';
         let settings = {};
         let selectedLegsToWin = 1;
         let isCompetition = true;
+        let isCricketSimpleMode = false;
         const lastScores = {};
 
         function escapeHtml(s) {
@@ -617,6 +701,19 @@
 
         function allTurns(p) {
             return (p.pastTurns || []).concat(p.turns || []);
+        }
+
+        function getCricketRounds(player) {
+            if (Array.isArray(player.cricketRounds)) return player.cricketRounds;
+            const hits = player.dartHits || [];
+            const rounds = [];
+            for (let i = 0; i + 2 < hits.length; i += 3) {
+                rounds.push(hits.slice(i, i + 3).reduce((sum, hit) => {
+                    if (Number(hit.val) === 0) return sum;
+                    return sum + Math.max(1, Math.min(3, Number(hit.mult) || 1));
+                }, 0));
+            }
+            return rounds;
         }
 
         function loadSettings() {
@@ -629,6 +726,11 @@
             isDoubleOut = !!settings.doubleOut;
             selectedLegsToWin = settings.legsToWin || 1;
             isCompetition = settings.competition !== false;
+            const hasCricketSimpleModePreference = settings.cricketSimpleModeConfigured === true;
+            isCricketSimpleMode = hasCricketSimpleModePreference && settings.cricketSimpleMode === true;
+            settings.cricketSimpleMode = isCricketSimpleMode;
+            settings.cricketSimpleModeConfigured = true;
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
         }
 
         function setCompetition(v) {
@@ -647,10 +749,33 @@
         }
 
         function saveSettings(names) {
-            settings = { playerCount: selectedPlayerCount, names: names, doubleOut: isDoubleOut, legsToWin: selectedLegsToWin, competition: isCompetition };
+            settings = { playerCount: selectedPlayerCount, names: names, doubleOut: isDoubleOut, legsToWin: selectedLegsToWin, competition: isCompetition, cricketSimpleMode: isCricketSimpleMode, cricketSimpleModeConfigured: true };
             try {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
             } catch (e) {}
+        }
+
+        function setCricketSimpleMode(enabled) {
+            isCricketSimpleMode = enabled;
+            settings.cricketSimpleMode = enabled;
+            settings.cricketSimpleModeConfigured = true;
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (e) {}
+            renderCricketSimpleModeButtons();
+        }
+
+        function toggleCricketSimpleMode() {
+            setCricketSimpleMode(!isCricketSimpleMode);
+        }
+
+        function renderCricketSimpleModeButtons() {
+            ['cricket-simple-toggle-standard', 'cricket-simple-toggle-cutthroat'].forEach(id => {
+                const button = document.getElementById(id);
+                if (!button) return;
+                button.innerText = isCricketSimpleMode ? 'OUI' : 'NON';
+                button.className = `border font-bold px-2.5 py-1 rounded-lg text-xs transition ${isCricketSimpleMode ? 'bg-emerald-600 border-emerald-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`;
+            });
         }
 
         function setLegsToWin(n) {
@@ -684,6 +809,7 @@
                 q.turns = [];
                 q.score = gameState.mode === 'x01' ? gameState.x01Base : 0;
                 q.cricketMarks = {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0};
+                q.cricketRoundDarts = [];
             });
             gameState.legStarter = ((gameState.legStarter || 0) + 1) % gameState.players.length;
             gameState.activePlayerIndex = gameState.legStarter;
@@ -753,22 +879,40 @@
 
         function renderPlayersStats() {
             const c = document.getElementById('players-stats-container');
+            playerEvolutionCharts.forEach(chart => chart.destroy());
+            playerEvolutionCharts = [];
+            playerEvolutionData = null;
             let matches = [];
             try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]'); } catch (e) {}
 
             const stats = {};
             const get = n => {
-                if (!stats[n]) stats[n] = { name: n, played: 0, wins: 0, sumPts: 0, sumTurns: 0, bestAvg: 0, bestTurn: 0, n180: 0, n100: 0, h2h: {} };
+                if (!stats[n]) stats[n] = {
+                    name: n,
+                    x01: { played: 0, wins: 0, currentStreak: { type: null, count: 0 }, bestWinStreak: 0, sumPts: 0, sumTurns: 0, bestAvg: 0, bestTurn: 0, n180: 0, n100: 0, h2h: {} },
+                    cricket: { played: 0, wins: 0, currentStreak: { type: null, count: 0 }, bestWinStreak: 0, marks: 0, rounds: 0, h2h: {} }
+                };
                 return stats[n];
             };
 
-            matches.forEach(m => {
+            [...matches].sort((a, b) => Number(a.id) - Number(b.id)).forEach(m => {
                 const isX01 = m.rawMode === 'x01' || (m.mode && m.mode.startsWith('X01'));
                 m.players.forEach(p => {
                     const s = get(p.name);
+                    const modeStats = isX01 ? s.x01 : s.cricket;
                     const won = p.name === m.winner;
-                    s.played++;
-                    if (won) s.wins++;
+                    modeStats.played++;
+                    if (m.winner) {
+                        const streakType = won ? 'win' : 'loss';
+                        modeStats.currentStreak.count = modeStats.currentStreak.type === streakType
+                            ? modeStats.currentStreak.count + 1
+                            : 1;
+                        modeStats.currentStreak.type = streakType;
+                        if (won) {
+                            modeStats.wins++;
+                            modeStats.bestWinStreak = Math.max(modeStats.bestWinStreak, modeStats.currentStreak.count);
+                        }
+                    }
 
                     if (isX01) {
                         const turns = allTurns(p);
@@ -776,62 +920,182 @@
                         turns.forEach(t => {
                             if (t.busted) return;
                             pts += t.points;
-                            if (t.points > s.bestTurn) s.bestTurn = t.points;
-                            if (t.points === 180) s.n180++;
-                            if (t.points >= 100) s.n100++;
+                            if (t.points > modeStats.bestTurn) modeStats.bestTurn = t.points;
+                            if (t.points === 180) modeStats.n180++;
+                            if (t.points >= 100) modeStats.n100++;
                         });
                         if (turns.length) {
-                            s.sumPts += pts;
-                            s.sumTurns += turns.length;
-                            s.bestAvg = Math.max(s.bestAvg, pts / turns.length);
+                            modeStats.sumPts += pts;
+                            modeStats.sumTurns += turns.length;
+                            modeStats.bestAvg = Math.max(modeStats.bestAvg, pts / turns.length);
                         }
+                    } else {
+                        const rounds = getCricketRounds(p);
+                        modeStats.marks += rounds.reduce((sum, marks) => sum + marks, 0);
+                        modeStats.rounds += rounds.length;
                     }
 
                     m.players.forEach(o => {
                         if (o.name === p.name) return;
-                        const h = s.h2h[o.name] || (s.h2h[o.name] = { w: 0, l: 0 });
+                        const h = modeStats.h2h[o.name] || (modeStats.h2h[o.name] = { w: 0, l: 0 });
                         if (won) h.w++;
                         else if (o.name === m.winner) h.l++;
                     });
                 });
             });
 
-            const list = Object.values(stats).sort((a, b) => b.wins - a.wins || (b.wins / b.played) - (a.wins / a.played));
+            const list = Object.values(stats).sort((a, b) => {
+                const aWins = a.x01.wins + a.cricket.wins;
+                const bWins = b.x01.wins + b.cricket.wins;
+                const aPlayed = a.x01.played + a.cricket.played;
+                const bPlayed = b.x01.played + b.cricket.played;
+                return bWins - aWins || (bWins / bPlayed) - (aWins / aPlayed);
+            });
             if (list.length === 0) {
                 c.innerHTML = '<p class="text-slate-500 text-center text-xs py-4">Aucune partie enregistrée.</p>';
                 return;
             }
 
-            c.innerHTML = list.map(s => {
-                const rate = Math.round((s.wins / s.played) * 100);
-                const avg = s.sumTurns ? (s.sumPts / s.sumTurns).toFixed(1) : '-';
-                const h2h = Object.entries(s.h2h).map(([n, h]) => `
-                    <div class="flex justify-between bg-slate-900/80 px-2 py-1.5 rounded-lg border border-slate-800 text-xs">
-                        <span class="text-slate-300">vs ${escapeHtml(n)}</span>
-                        <span><strong class="text-emerald-400">${h.w}V</strong> - <strong class="text-red-400">${h.l}D</strong></span>
-                    </div>`).join('');
+            c.innerHTML = list.map((s, playerIdx) => {
                 const cell = (label, val, color) => `
                     <div class="bg-slate-900/80 rounded-lg border border-slate-800 p-2 text-center">
                         <div class="text-base font-black ${color}">${val}</div>
                         <div class="text-[10px] text-slate-400">${label}</div>
                     </div>`;
+                const modeSection = (modeStats, mode, label, color, metrics) => {
+                    const rate = modeStats.played ? Math.round((modeStats.wins / modeStats.played) * 100) : 0;
+                    const h2h = Object.entries(modeStats.h2h).map(([name, record]) => `
+                        <div class="flex justify-between bg-slate-900/80 px-2 py-1.5 rounded-lg border border-slate-800 text-xs">
+                            <span class="text-slate-300">vs ${escapeHtml(name)}</span>
+                            <span><strong class="text-emerald-400">${record.w}V</strong> - <strong class="text-red-400">${record.l}D</strong></span>
+                        </div>`).join('');
+                    return `
+                        <section class="border-t border-slate-800 pt-2 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold ${color}">${label}</span>
+                                <span class="text-[10px] text-slate-300">${modeStats.wins}V / ${modeStats.played}J · ${rate}%</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                ${cell('Série en cours', modeStats.currentStreak.count ? `${modeStats.currentStreak.count} ${modeStats.currentStreak.type === 'win' ? 'victoire' : 'défaite'}${modeStats.currentStreak.count > 1 ? 's' : ''}` : '-', modeStats.currentStreak.type === 'win' ? 'text-emerald-400' : 'text-red-400')}
+                                ${cell('Meilleure série de victoires', modeStats.bestWinStreak || '-', 'text-amber-400')}
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5">${metrics}</div>
+                            ${modeStats.played ? `
+                                <div class="text-[10px] text-slate-400 font-semibold">${label} · statistique et bilan V-D</div>
+                                <div class="relative h-32"><canvas id="player-evolution-${playerIdx}-${mode}" aria-label="Évolution ${label} de ${escapeHtml(s.name)}"></canvas></div>` : '<div class="text-[10px] text-slate-500">Aucune partie dans ce mode.</div>'}
+                            ${h2h ? `<div class="space-y-1 pt-1">${h2h}</div>` : ''}
+                        </section>`;
+                };
+                const x01Avg = s.x01.sumTurns ? (s.x01.sumPts / s.x01.sumTurns).toFixed(1) : '-';
+                const x01Metrics = [
+                    cell('Moyenne X01', x01Avg, 'text-amber-400'),
+                    cell('Meilleure moy.', s.x01.bestAvg ? s.x01.bestAvg.toFixed(1) : '-', 'text-amber-400'),
+                    cell('Meilleure volée', s.x01.bestTurn || '-', 'text-emerald-400'),
+                    cell('180', s.x01.n180, 'text-red-400'),
+                    cell('Volées 100+', s.x01.n100, 'text-sky-400')
+                ].join('');
+                const cricketMpr = s.cricket.rounds ? (s.cricket.marks / s.cricket.rounds).toFixed(1) : '-';
+                const cricketMetrics = [
+                    cell('MPR', cricketMpr, 'text-sky-400'),
+                    cell('Manches', s.cricket.rounds, 'text-emerald-400'),
+                    cell('Marks', s.cricket.marks, 'text-amber-400')
+                ].join('');
                 return `
                     <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-slate-100">${escapeHtml(s.name)}</span>
-                            <span class="text-xs text-amber-400 font-bold">${s.wins}V / ${s.played}J · ${rate}%</span>
-                        </div>
-                        <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width:${rate}%"></div></div>
-                        <div class="grid grid-cols-3 gap-1.5">
-                            ${cell('Moy. X01', avg, 'text-amber-400')}
-                            ${cell('Meilleure moy.', s.bestAvg ? s.bestAvg.toFixed(1) : '-', 'text-amber-400')}
-                            ${cell('Meilleure volée', s.bestTurn || '-', 'text-emerald-400')}
-                            ${cell('180', s.n180, 'text-red-400')}
-                            ${cell('Volées 100+', s.n100, 'text-sky-400')}
-                        </div>
-                        ${h2h ? `<div class="space-y-1 pt-1">${h2h}</div>` : ''}
+                        <div class="font-bold text-slate-100">${escapeHtml(s.name)}</div>
+                        ${modeSection(s.x01, 'x01', 'X01', 'text-amber-400', x01Metrics)}
+                        ${modeSection(s.cricket, 'cricket', 'Cricket', 'text-sky-400', cricketMetrics)}
                     </div>`;
             }).join('');
+            playerEvolutionData = { players: list, matches: matches };
+        }
+
+        function renderPlayerEvolutionCharts() {
+            const content = document.getElementById('hist-tab-players-content');
+            if (!playerEvolutionData || content.classList.contains('hidden')) return;
+
+            playerEvolutionCharts.forEach(chart => chart.destroy());
+            playerEvolutionCharts = [];
+
+            playerEvolutionData.players.forEach((player, playerIdx) => {
+                const playerMatches = playerEvolutionData.matches
+                    .filter(match => (match.players || []).some(participant => participant.name === player.name))
+                    .sort((a, b) => Number(a.id) - Number(b.id));
+
+                [
+                    { key: 'x01', label: 'PPD', color: '#fbbf24', max: 180, step: 10 },
+                    { key: 'cricket', label: 'MPR', color: '#60a5fa', max: 9, step: .5 }
+                ].forEach(config => {
+                    const matches = playerMatches.filter(match => {
+                        const isX01 = match.rawMode === 'x01' || (match.mode && match.mode.startsWith('X01'));
+                        return config.key === 'x01' ? isX01 : !isX01;
+                    });
+                    const canvas = document.getElementById(`player-evolution-${playerIdx}-${config.key}`);
+                    if (!canvas || !matches.length) return;
+
+                    let winLossBalance = 0;
+                    const metricData = [];
+                    const winLossData = [];
+                    matches.forEach(match => {
+                        const participant = match.players.find(entry => entry.name === player.name);
+                        if (config.key === 'x01') {
+                            const turns = allTurns(participant);
+                            const points = turns.reduce((sum, turn) => sum + (turn.busted ? 0 : turn.points), 0);
+                            metricData.push(turns.length ? points / turns.length : null);
+                        } else {
+                            const rounds = getCricketRounds(participant);
+                            metricData.push(rounds.length ? rounds.reduce((sum, marks) => sum + marks, 0) / rounds.length : null);
+                        }
+                        winLossBalance += match.winner === player.name ? 1 : -1;
+                        winLossData.push(winLossBalance);
+                    });
+
+                    const validValues = metricData.filter(value => value !== null && Number.isFinite(value));
+                    let axisMin = 0;
+                    let axisMax = config.max;
+                    if (validValues.length) {
+                        const minValue = Math.min(...validValues);
+                        const maxValue = Math.max(...validValues);
+                        const padding = Math.max(config.step, (maxValue - minValue) * .15);
+                        axisMin = Math.max(0, Math.floor((minValue - padding) / config.step) * config.step);
+                        axisMax = Math.min(config.max, Math.ceil((maxValue + padding) / config.step) * config.step);
+                        if (axisMin === axisMax) {
+                            axisMin = Math.max(0, axisMin - config.step);
+                            axisMax = Math.min(config.max, axisMax + config.step);
+                        }
+                    }
+
+                    playerEvolutionCharts.push(new Chart(canvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: matches.map((_, idx) => `P${idx + 1}`),
+                            datasets: [
+                                { label: config.label, data: metricData, yAxisID: 'y', borderColor: config.color, backgroundColor: `${config.color}22`, borderWidth: 2, pointRadius: 3, tension: .25, spanGaps: true },
+                                { label: 'Bilan V-D', data: winLossData, yAxisID: 'yCount', borderColor: '#34d399', backgroundColor: '#34d39922', borderWidth: 2, pointRadius: 2, stepped: true }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { position: 'bottom', labels: { color: '#cbd5e1', boxWidth: 10, font: { size: 9 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        title: items => matches[items[0].dataIndex].date || `Partie ${items[0].dataIndex + 1}`,
+                                        label: item => `${item.dataset.label}: ${item.raw === null ? '-' : item.raw.toFixed ? item.raw.toFixed(1) : item.raw}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: '#334155' } },
+                                y: { min: axisMin, max: axisMax, title: { display: true, text: config.label, color: config.color }, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                                yCount: { beginAtZero: true, position: 'right', title: { display: true, text: 'Bilan V-D', color: '#34d399' }, ticks: { color: '#94a3b8', precision: 0 }, grid: { drawOnChartArea: false } }
+                            }
+                        }
+                    }));
+                });
+            });
         }
 
         function renderHomePodium() {
@@ -907,6 +1171,7 @@
                 isGameActive = true;
                 document.getElementById('game-setup-screen').classList.add('hidden');
                 document.getElementById('active-game-screen').classList.remove('hidden');
+                window.scrollTo(0, 0);
             }
         }
 
@@ -916,6 +1181,36 @@
             } else {
                 openSetupScreen();
             }
+        }
+
+        function initAppBackNavigation() {
+            const guardState = { dartScorerBackGuard: true };
+            history.replaceState(guardState, '', location.href);
+            history.pushState(guardState, '', location.href);
+            window.addEventListener('popstate', () => {
+                history.pushState(guardState, '', location.href);
+                handleAppBack();
+            });
+        }
+
+        function handleAppBack() {
+            const closeActions = [
+                ['delete-player-modal', cancelManagedPlayerRemoval],
+                ['add-player-modal', closeAddPlayerModal],
+                ['players-modal', closePlayersModal],
+                ['discard-modal', cancelDiscard],
+                ['leg-modal', closeLegModal],
+                ['winner-modal', closeWinnerModal],
+                ['stats-modal', closeStatsModal],
+                ['history-modal', closeHistoryModal],
+                ['menu-confirm-modal', closeMenuConfirmModal]
+            ];
+            const openModal = closeActions.find(([id]) => !document.getElementById(id).classList.contains('hidden'));
+            if (openModal) {
+                openModal[1]();
+                return;
+            }
+            if (isGameActive) handleMenuButtonClick();
         }
 
         function openMenuConfirmModal() {
@@ -1113,9 +1408,28 @@
             const key = name.toLowerCase();
             let matches = [];
             try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]') || []; } catch (e) {}
+            const removed = matches.filter(m => (m.players || []).some(p => (p.name || '').toLowerCase() === key)).length;
+            pendingPlayerRemovalName = name;
+            document.getElementById('delete-player-name').textContent = name;
+            document.getElementById('delete-player-match-count').textContent = `${removed} partie${removed > 1 ? 's' : ''}`;
+            document.getElementById('delete-player-modal').classList.remove('hidden');
+        }
+
+        function cancelManagedPlayerRemoval() {
+            pendingPlayerRemovalName = null;
+            document.getElementById('delete-player-modal').classList.add('hidden');
+        }
+
+        function confirmManagedPlayerRemoval() {
+            if (!pendingPlayerRemovalName) return;
+            const name = pendingPlayerRemovalName;
+            const key = name.toLowerCase();
+            pendingPlayerRemovalName = null;
+            document.getElementById('delete-player-modal').classList.add('hidden');
+
+            let matches = [];
+            try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]') || []; } catch (e) {}
             const kept = matches.filter(m => !(m.players || []).some(p => (p.name || '').toLowerCase() === key));
-            const removed = matches.length - kept.length;
-            if (!confirm(`Supprimer "${name}" et ses ${removed} partie(s) de l'historique ? Cette action est définitive.`)) return;
             try { localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(kept)); } catch (e) {}
             const hidden = getHiddenPlayers();
             hidden.push(key);
@@ -1126,26 +1440,34 @@
         }
 
         function addNewPlayer(idx) {
-            const raw = prompt('Nom du nouveau joueur :');
-            const name = (raw || '').trim();
-            if (!name) return;
-            setHiddenPlayers(getHiddenPlayers().filter(n => n !== name.toLowerCase()));
-            const players = getKnownPlayers();
-            let existing = players.find(p => p.toLowerCase() === name.toLowerCase());
-            if (existing) {
-                showTemporaryToast(`"${existing}" existe déjà`);
-            } else {
-                existing = name;
-                players.push(name);
-                storeKnownPlayers(players);
+            pendingNewPlayerIdx = idx;
+            document.getElementById('add-player-name').value = '';
+            document.getElementById('add-player-error').classList.add('hidden');
+            document.getElementById('add-player-modal').classList.remove('hidden');
+            document.getElementById('add-player-name').focus();
+        }
+
+        function closeAddPlayerModal() {
+            document.getElementById('add-player-modal').classList.add('hidden');
+            pendingNewPlayerIdx = null;
+        }
+
+        function confirmAddNewPlayer() {
+            const input = document.getElementById('add-player-name');
+            const error = document.getElementById('add-player-error');
+            const result = registerPlayer(input.value);
+            if (!result) {
+                error.innerText = 'Saisissez un nom pour continuer.';
+                error.classList.remove('hidden');
+                input.focus();
+                return;
             }
-            const names = [];
-            for (let i = 0; i < selectedPlayerCount; i++) {
-                const el = document.getElementById(`setup-p${i}-name`);
-                if (el) names[i] = el.value;
-            }
-            names[idx] = existing;
+
+            if (!result.created) showTemporaryToast(`"${result.name}" existe déjà`);
+            const names = currentSelections();
+            names[pendingNewPlayerIdx] = result.name;
             renderPlayerSelects(names);
+            closeAddPlayerModal();
         }
 
         let pendingStart = null;
@@ -1195,7 +1517,9 @@
                     pastTurns: [],
                     turns: [], 
                     dartHits: [],
-                    cricketMarks: {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0}
+                    cricketMarks: {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0},
+                    cricketRounds: [],
+                    cricketRoundDarts: []
                 });
             }
 
@@ -1208,6 +1532,8 @@
                 competition: isCompetition,
                 legStarter: 0,
                 doubleOut: isDoubleOut,
+                cricketSimpleMode: isCricketSimpleMode,
+                cricketMultiplier: 1,
                 players: players,
                 activePlayerIndex: 0,
                 currentTurnDarts: [],
@@ -1230,6 +1556,7 @@
 
             saveStateToStorage();
             updateUI();
+            window.scrollTo(0, 0);
         }
 
         function openSetupScreen() {
@@ -1250,7 +1577,8 @@
                 activePlayerIndex: gameState.activePlayerIndex,
                 legStarter: gameState.legStarter,
                 currentTurnDarts: gameState.currentTurnDarts,
-                multiplier: gameState.multiplier
+                multiplier: gameState.multiplier,
+                cricketMultiplier: gameState.cricketMultiplier
             })));
         }
 
@@ -1262,10 +1590,22 @@
             gameState.legStarter = prev.legStarter;
             gameState.currentTurnDarts = prev.currentTurnDarts;
             gameState.multiplier = prev.multiplier;
+            gameState.cricketMultiplier = prev.cricketMultiplier || 1;
             if (gameState.mode !== 'x01' && gameState.cricketLog && gameState.cricketLog.length) gameState.cricketLog.pop();
 
             saveStateToStorage();
             updateUI();
+        }
+
+        function setCricketMultiplier(multiplier) {
+            gameState.cricketMultiplier = multiplier;
+            saveStateToStorage();
+            renderCricketTable();
+        }
+
+        function registerCricketMiss() {
+            if (gameState.cricketSimpleMode) return;
+            recordCricketThrow(gameState.activePlayerIndex, 0, 1);
         }
 
         function undoWin() {
@@ -1440,50 +1780,85 @@
         }
 
         function hitCricketTarget(playerIdx, target) {
+            if (!gameState.cricketSimpleMode && playerIdx !== gameState.activePlayerIndex) return;
+            const multiplier = gameState.cricketSimpleMode ? 1 : (gameState.cricketMultiplier || 1);
+            recordCricketThrow(playerIdx, target, multiplier);
+        }
+
+        function recordCricketThrow(playerIdx, target, multiplier) {
             saveStateForUndo();
 
-            if (gameState.activePlayerIndex !== playerIdx) {
+            if (gameState.cricketSimpleMode && gameState.activePlayerIndex !== playerIdx) {
                 gameState.activePlayerIndex = playerIdx;
                 gameState.currentTurnDarts = [];
             }
 
             const activePlayer = gameState.players[playerIdx];
-            const currentMarks = activePlayer.cricketMarks[target];
-
-            activePlayer.dartHits.push({ val: target, mult: 1 });
+            activePlayer.dartHits.push({ val: target, mult: multiplier });
 
             const label = target === 25 ? 'BULL' : target;
+            const dartLabel = target === 0 ? 'RATÉ' : `${multiplier === 3 ? 'T' : multiplier === 2 ? 'D' : 'S'}${label}`;
+            const startingMarks = target === 0 ? 0 : (activePlayer.cricketMarks[target] || 0);
+            const addedMarks = target === 0 ? 0 : Math.min(multiplier, Math.max(0, 3 - startingMarks));
+            const overflowMarks = target === 0 ? 0 : multiplier - addedMarks;
+            if (target !== 0) activePlayer.cricketMarks[target] = Math.min(3, startingMarks + multiplier);
+
+            let scoredPoints = 0;
+            let receivers = [];
+            if (overflowMarks > 0 && gameState.mode === 'cricket') {
+                const hasOpenOpponent = gameState.players.some((p, idx) => idx !== playerIdx && p.cricketMarks[target] < 3);
+                if (hasOpenOpponent) {
+                    scoredPoints = overflowMarks * target;
+                    activePlayer.score += scoredPoints;
+                }
+            } else if (overflowMarks > 0 && gameState.mode === 'cutthroat') {
+                receivers = gameState.players.filter((p, idx) => idx !== playerIdx && p.cricketMarks[target] < 3);
+                receivers.forEach(player => { player.score += overflowMarks * target; });
+                if (receivers.length) scoredPoints = overflowMarks * target;
+            }
+
             let logText;
             let toast = null;
-
-            if (currentMarks < 3) {
-                activePlayer.cricketMarks[target]++;
-                logText = `${label} : marque ${activePlayer.cricketMarks[target]}/3`;
+            if (target === 0) {
+                logText = 'RATÉ : aucune marque';
+            } else if (addedMarks > 0) {
+                logText = `${dartLabel} : marque ${activePlayer.cricketMarks[target]}/3`;
             } else {
-                const pts = target;
-                logText = `${label} : cible déjà fermée, aucun point`;
-
+                logText = `${dartLabel} : cible déjà fermée`;
+            }
+            if (scoredPoints > 0) {
                 if (gameState.mode === 'cricket') {
-                    const openOpponents = gameState.players.filter((p, idx) => idx !== playerIdx && p.cricketMarks[target] < 3);
-                    if (openOpponents.length > 0) {
-                        activePlayer.score += pts;
-                        logText = `${label} : +${pts} pts pour ${activePlayer.name}`;
-                        toast = `${activePlayer.name} marque +${pts} pts (${label})`;
-                    }
-                } else if (gameState.mode === 'cutthroat') {
-                    const receivers = [];
-                    gameState.players.forEach((p, idx) => {
-                        if (idx !== playerIdx && p.cricketMarks[target] < 3) {
-                            p.score += pts;
-                            receivers.push(p.name);
-                        }
-                    });
-                    if (receivers.length > 0) {
-                        logText = `${label} : +${pts} pts donnés à ${receivers.join(', ')}`;
-                        toast = `${activePlayer.name} donne +${pts} pts à ${receivers.join(', ')}`;
-                    }
+                    logText += `, +${scoredPoints} pts`;
+                    toast = `${activePlayer.name} marque +${scoredPoints} pts (${label})`;
+                } else {
+                    logText += `, +${scoredPoints} pts pour ${receivers.map(p => p.name).join(', ')}`;
+                    toast = `${activePlayer.name} donne +${scoredPoints} pts à ${receivers.map(p => p.name).join(', ')}`;
                 }
-                if (!toast) toast = `${label} fermé par tous : aucun point`;
+            }
+
+            activePlayer.cricketRoundDarts = activePlayer.cricketRoundDarts || [];
+            activePlayer.cricketRounds = activePlayer.cricketRounds || [];
+            activePlayer.cricketRoundDarts.push(target === 0 ? 0 : multiplier);
+            let completedRoundMarks = null;
+            if (activePlayer.cricketRoundDarts.length === 3) {
+                completedRoundMarks = activePlayer.cricketRoundDarts.reduce((sum, marks) => sum + marks, 0);
+                activePlayer.cricketRounds.push(completedRoundMarks);
+                activePlayer.cricketRoundDarts = [];
+            }
+
+            if (!gameState.cricketSimpleMode) {
+                gameState.currentTurnDarts.push({ val: target, mult: multiplier, pts: scoredPoints, display: dartLabel });
+                gameState.cricketMultiplier = 1;
+                if (gameState.currentTurnDarts.length === 3) {
+                    activePlayer.turns.push({
+                        round: activePlayer.turns.length + 1,
+                        marks: completedRoundMarks,
+                        points: 0,
+                        darts: [...gameState.currentTurnDarts]
+                    });
+                    gameState.currentTurnDarts = [];
+                    nextPlayerTurn();
+                }
             }
 
             if (!gameState.cricketLog) gameState.cricketLog = [];
@@ -1585,6 +1960,7 @@
                 }
 
                 card.onclick = () => {
+                    if (gameState.mode !== 'x01' && !gameState.cricketSimpleMode && idx !== gameState.activePlayerIndex) return;
                     if (gameState.activePlayerIndex !== idx) {
                         gameState.activePlayerIndex = idx;
                         gameState.currentTurnDarts = [];
@@ -1662,6 +2038,22 @@
         function renderCricketTable() {
             const headerRow = document.getElementById('cricket-header-row');
             const rowsContainer = document.getElementById('cricket-rows');
+            const advanced = !gameState.cricketSimpleMode;
+            const controls = document.getElementById('cricket-advanced-controls');
+            controls.classList.toggle('hidden', !advanced);
+            if (advanced) {
+                const selectedClasses = {
+                    1: 'bg-slate-100 text-slate-900 border-white',
+                    2: 'bg-emerald-500 text-slate-950 border-emerald-300',
+                    3: 'bg-red-600 text-white border-red-400'
+                };
+                [1, 2, 3].forEach(multiplier => {
+                    const button = document.getElementById(`cricket-mult-${multiplier}`);
+                    button.className = `py-2 rounded-lg text-[11px] font-extrabold border ${gameState.cricketMultiplier === multiplier ? selectedClasses[multiplier] : 'bg-slate-800 text-slate-300 border-slate-700'}`;
+                });
+                const player = gameState.players[gameState.activePlayerIndex];
+                document.getElementById('cricket-turn-progress').innerHTML = `Au tour de <strong>${escapeHtml(player.name)}</strong> · Fléchette ${gameState.currentTurnDarts.length + 1}/3`;
+            }
 
             const colCount = gameState.players.length + 1;
             headerRow.style.gridTemplateColumns = `repeat(${colCount}, minmax(0, 1fr))`;
@@ -1685,9 +2077,10 @@
 
                 gameState.players.forEach((p, pIdx) => {
                     const marks = p.cricketMarks[target];
+                    const disabled = isClosed || (advanced && pIdx !== gameState.activePlayerIndex);
                     row.innerHTML += `
                         <div class="px-1">
-                            <button onclick="hitCricketTarget(${pIdx}, ${target})" ${isClosed ? 'disabled' : ''} class="w-full bg-slate-800 hover:bg-slate-700 py-1 rounded-lg border border-slate-700 text-emerald-400 font-extrabold text-sm min-h-[48px] active:scale-95 transition">
+                            <button onclick="hitCricketTarget(${pIdx}, ${target})" ${disabled ? 'disabled' : ''} class="w-full bg-slate-800 hover:bg-slate-700 py-1 rounded-lg border border-slate-700 text-emerald-400 font-extrabold text-sm min-h-[48px] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed">
                                 ${getCricketSymbol(marks)}
                             </button>
                         </div>
@@ -1718,8 +2111,36 @@
             clearActiveGameStorage();
             document.getElementById('winner-title').innerText = "Victoire !";
             document.querySelector('#winner-message .winner-name').textContent = name;
+            renderWinnerCricketSummary(name);
             launchVictoryCelebration();
             document.getElementById('winner-modal').classList.remove('hidden');
+        }
+
+        function renderWinnerCricketSummary(winnerName) {
+            const summary = document.getElementById('winner-cricket-summary');
+            const container = document.getElementById('winner-cricket-players');
+            const isCricket = gameState.mode === 'cricket' || gameState.mode === 'cutthroat';
+            summary.classList.toggle('hidden', !isCricket);
+            if (!isCricket) return;
+
+            const winner = gameState.players.find(player => player.name === winnerName);
+            const winnerScore = winner ? winner.score : 0;
+            container.innerHTML = gameState.players.map((player, idx) => {
+                const rounds = getCricketRounds(player);
+                const mpr = rounds.length
+                    ? (rounds.reduce((sum, marks) => sum + marks, 0) / rounds.length).toFixed(1)
+                    : '-';
+                const gap = gameState.mode === 'cutthroat'
+                    ? player.score - winnerScore
+                    : winnerScore - player.score;
+                const color = PLAYER_COLORS[idx % PLAYER_COLORS.length].main;
+                return `<div class="grid grid-cols-[minmax(0,1fr)_3.5rem_4rem_4.5rem] gap-1 items-center bg-slate-900/80 border border-slate-800 rounded-lg px-1.5 py-2 text-[11px]">
+                    <span class="min-w-0 truncate font-bold text-slate-100" style="border-left:3px solid ${color};padding-left:.35rem">${escapeHtml(player.name)}</span>
+                    <span class="text-center font-black text-emerald-300">${mpr}</span>
+                    <span class="text-right font-semibold text-slate-200">${player.score} pts</span>
+                    <span class="text-right font-bold ${gap === 0 ? 'text-amber-300' : 'text-slate-400'}">${gap} pt${gap === 1 ? '' : 's'}</span>
+                </div>`;
+            }).join('');
         }
 
         function launchVictoryCelebration() {
@@ -1782,6 +2203,12 @@
                 if (saved) {
                     gameState = JSON.parse(saved);
                     if (gameState.players && gameState.players.length > 0) {
+                        if (gameState.cricketSimpleMode === undefined) gameState.cricketSimpleMode = true;
+                        gameState.cricketMultiplier = gameState.cricketMultiplier || 1;
+                        gameState.players.forEach(player => {
+                            player.cricketRounds = player.cricketRounds || [];
+                            player.cricketRoundDarts = player.cricketRoundDarts || [];
+                        });
                         selectedLegsToWin = gameState.legsToWin || 1;
                         renderLegsButtons();
                         if (gameState.mode === 'x01') {
@@ -1820,6 +2247,7 @@
                         pastTurns: p.pastTurns || [],
                         turns: p.turns || [],
                         dartHits: p.dartHits || [],
+                        cricketRounds: p.cricketRounds || [],
                         cricketMarks: p.cricketMarks || {15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 25:0}
                     }))
                 };
@@ -1840,6 +2268,7 @@
                 document.getElementById(`hist-tab-${t}-content`).classList.toggle('hidden', t !== tab);
             });
             if (tab === 'x01') setTimeout(() => renderGlobalEvolutionChart(), 50);
+            if (tab === 'players') setTimeout(() => renderPlayerEvolutionCharts(), 50);
         }
 
         function deleteSingleMatch(matchId) {
@@ -1978,6 +2407,7 @@
                                         <span class="text-[10px] text-slate-400">
                                             ${isWinner ? 'Toutes cibles fermées' : `<span class="text-amber-400 font-semibold">${missingTargets} cible(s) manquante(s)</span>`}
                                         </span>
+                                        <span class="text-[10px] text-emerald-300">${getCricketRounds(p).length ? (getCricketRounds(p).reduce((sum, marks) => sum + marks, 0) / getCricketRounds(p).length).toFixed(1) : '-'} Marks / round</span>
                                     </div>
                                     <div class="text-right">
                                         <div class="${scoreClass} text-sm">${p.score} pts</div>
