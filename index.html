@@ -327,7 +327,11 @@
                     </button>
                     <input type="file" id="import-file-input" accept=".json,application/json" class="hidden" onchange="importBackup(event)">
                 </div>
-                <p class="text-[11px] text-slate-500">Les données sont stockées dans le navigateur : exportez régulièrement.</p>
+                <button onclick="syncDriveClick()" id="drive-sync-btn" class="w-full bg-slate-800 active:bg-emerald-700 border border-slate-700 py-3 rounded-xl text-sm font-semibold text-emerald-300 flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-google-drive"></i> Se connecter à Google Drive
+                </button>
+                <p id="drive-sync-status" role="status" class="text-[11px] text-slate-400">Synchronisation Drive désactivée</p>
+                <p class="text-[11px] text-slate-500">Une connexion Google est nécessaire. L’historique, la partie en cours, les joueurs et les réglages sont synchronisés.</p>
             </div>
         </div>
 
@@ -642,6 +646,10 @@
     <script>
         const STORAGE_KEY = 'dart_scoreboard_poc_state';
         const MATCH_HISTORY_KEY = 'dart_scoreboard_match_history';
+        const DRIVE_SYNC_STATE_TS_KEY = 'dart_scoreboard_drive_state_ts';
+        const DRIVE_SYNC_SETTINGS_TS_KEY = 'dart_scoreboard_drive_settings_ts';
+        const DRIVE_SYNC_HIDDEN_TS_KEY = 'dart_scoreboard_drive_hidden_ts';
+        const DRIVE_SYNC_DELETED_KEY = 'dart_scoreboard_drive_deleted_matches';
         const CRICKET_TARGETS = [20, 19, 18, 17, 16, 15, 25];
         const SECTORS_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
 
@@ -753,6 +761,7 @@
             try {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
             } catch (e) {}
+            markDriveChanged('settings');
         }
 
         function setCricketSimpleMode(enabled) {
@@ -762,6 +771,7 @@
             try {
                 localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
             } catch (e) {}
+            markDriveChanged('settings');
             renderCricketSimpleModeButtons();
         }
 
@@ -867,6 +877,7 @@
                     const added = valid.filter(m => !ids.has(m.id));
                     const merged = current.concat(added).sort((a, b) => b.id - a.id);
                     localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(merged));
+                    markDriveHistoryChanged();
                     renderHomePodium();
                     showTemporaryToast(`${added.length} partie(s) importée(s)`);
                 } catch (e) {
@@ -1241,6 +1252,7 @@
             try {
                 localStorage.removeItem(STORAGE_KEY);
             } catch (e) {}
+            markDriveChanged('state');
         }
 
         function renderDoubleOutBtn() {
@@ -1287,6 +1299,7 @@
 
         function setHiddenPlayers(list) {
             try { localStorage.setItem(PLAYERS_HIDDEN_KEY, JSON.stringify(list)); } catch (e) {}
+            markDriveChanged('hidden');
         }
 
         // Known players: stored list + names already in history/settings, de-duplicated case-insensitively.
@@ -1310,6 +1323,7 @@
 
         function storeKnownPlayers(list) {
             try { localStorage.setItem(PLAYERS_KEY, JSON.stringify(list)); } catch (e) {}
+            markDriveChanged('players');
         }
 
         function renderPlayerSelects(prevNames) {
@@ -1431,6 +1445,7 @@
             try { matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]') || []; } catch (e) {}
             const kept = matches.filter(m => !(m.players || []).some(p => (p.name || '').toLowerCase() === key));
             try { localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(kept)); } catch (e) {}
+            markDriveHistoryChanged(matches.filter(m => !kept.includes(m)).map(m => m.id));
             const hidden = getHiddenPlayers();
             hidden.push(key);
             setHiddenPlayers(hidden);
@@ -1613,6 +1628,7 @@
                 try {
                     const matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
                     localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matches.filter(m => m.id !== gameState.lastMatchId)));
+                    markDriveHistoryChanged([gameState.lastMatchId]);
                 } catch (e) {}
                 gameState.lastMatchId = null;
             }
@@ -2192,6 +2208,7 @@
         function saveStateToStorage() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+                markDriveChanged('state');
             } catch (e) {
                 console.warn('LocalStorage non disponible');
             }
@@ -2254,6 +2271,7 @@
                 savedMatches.unshift(matchData);
                 gameState.lastMatchId = matchData.id;
                 localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(savedMatches));
+                markDriveHistoryChanged();
             } catch (e) {
                 console.warn('Impossible de sauvegarder');
             }
@@ -2277,6 +2295,7 @@
                     let matches = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]');
                     matches = matches.filter(m => m.id !== matchId);
                     localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matches));
+                    markDriveHistoryChanged([matchId]);
                     openHistoryModal();
                     renderHomePodium();
                     showTemporaryToast("Partie supprimée de l'historique");
@@ -2455,7 +2474,10 @@
 
         function clearSavedHistory() {
             if (confirm("Voulez-vous vraiment effacer tout l'historique des parties ?")) {
+                let deletedIds = [];
+                try { deletedIds = JSON.parse(localStorage.getItem(MATCH_HISTORY_KEY) || '[]').map(match => match.id); } catch (e) {}
                 localStorage.removeItem(MATCH_HISTORY_KEY);
+                markDriveHistoryChanged(deletedIds);
                 openHistoryModal();
                 renderHomePodium();
             }
@@ -2827,6 +2849,222 @@
 
             ctx.restore();
         }
+
+        const DRIVE_CLIENT_ID = '16422357160-o3riii27hu79sn51aobn3sf5a4sti53u.apps.googleusercontent.com';
+        const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+        const DRIVE_FILENAME = 'dart-master-shared.json';
+        const DRIVE_ENABLED_KEY = 'dart_scoreboard_drive_enabled';
+        let driveTokenClient = null;
+        let driveAccessToken = null;
+        let driveTokenExpiresAt = 0;
+        let driveSyncTimer = null;
+        let driveSyncBusy = false;
+        let driveSyncAgain = false;
+
+        function setDriveStatus(message, connected) {
+            const status = document.getElementById('drive-sync-status');
+            const button = document.getElementById('drive-sync-btn');
+            if (status) status.innerText = message;
+            if (button) button.innerHTML = `<i class="fa-brands fa-google-drive"></i> ${connected ? 'Synchroniser maintenant' : 'Se connecter à Google Drive'}`;
+        }
+
+        function markDriveChanged(kind) {
+            const timestamp = Date.now();
+            if (kind === 'state') localStorage.setItem(DRIVE_SYNC_STATE_TS_KEY, String(timestamp));
+            if (kind === 'settings') localStorage.setItem(DRIVE_SYNC_SETTINGS_TS_KEY, String(timestamp));
+            if (kind === 'hidden') localStorage.setItem(DRIVE_SYNC_HIDDEN_TS_KEY, String(timestamp));
+            scheduleDriveSync();
+        }
+
+        function markDriveHistoryChanged(deletedIds = []) {
+            if (deletedIds.length) {
+                let deleted = [];
+                try { deleted = JSON.parse(localStorage.getItem(DRIVE_SYNC_DELETED_KEY) || '[]'); } catch (e) {}
+                localStorage.setItem(DRIVE_SYNC_DELETED_KEY, JSON.stringify([...new Set(deleted.concat(deletedIds))]));
+            }
+            scheduleDriveSync();
+        }
+
+        function driveJson(key, fallback) {
+            try {
+                const value = JSON.parse(localStorage.getItem(key));
+                return value === null ? fallback : value;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function driveSnapshot() {
+            return {
+                app: 'dart-master',
+                version: 1,
+                matches: driveJson(MATCH_HISTORY_KEY, []),
+                deletedMatchIds: driveJson(DRIVE_SYNC_DELETED_KEY, []),
+                state: driveJson(STORAGE_KEY, null),
+                stateTs: Number(localStorage.getItem(DRIVE_SYNC_STATE_TS_KEY)) || 0,
+                players: driveJson(PLAYERS_KEY, []),
+                hiddenPlayers: driveJson(PLAYERS_HIDDEN_KEY, []),
+                settings: driveJson(SETTINGS_KEY, {}),
+                settingsTs: Number(localStorage.getItem(DRIVE_SYNC_SETTINGS_TS_KEY)) || 0,
+                hiddenTs: Number(localStorage.getItem(DRIVE_SYNC_HIDDEN_TS_KEY)) || 0
+            };
+        }
+
+        function mergeDriveSnapshots(local, remote) {
+            const deleted = [...new Set([...(local.deletedMatchIds || []), ...(remote.deletedMatchIds || [])])];
+            const matchesById = new Map();
+            [...(remote.matches || []), ...(local.matches || [])].forEach(match => matchesById.set(match.id, match));
+            const unionNames = (left, right) => [...new Map([...(left || []), ...(right || [])].map(name => [String(name).toLowerCase(), name])).values()];
+            const localIsNewer = (local.settingsTs || 0) >= (remote.settingsTs || 0);
+            const localStateIsNewer = (local.stateTs || 0) >= (remote.stateTs || 0);
+            const localHiddenIsNewer = (local.hiddenTs || 0) >= (remote.hiddenTs || 0);
+            return {
+                app: 'dart-master',
+                version: 1,
+                matches: [...matchesById.values()].filter(match => !deleted.includes(match.id)).sort((a, b) => Number(b.id) - Number(a.id)),
+                deletedMatchIds: deleted,
+                state: localStateIsNewer ? local.state : remote.state,
+                stateTs: Math.max(local.stateTs || 0, remote.stateTs || 0),
+                players: unionNames(local.players, remote.players),
+                hiddenPlayers: localHiddenIsNewer ? local.hiddenPlayers : remote.hiddenPlayers,
+                hiddenTs: Math.max(local.hiddenTs || 0, remote.hiddenTs || 0),
+                settings: localIsNewer ? local.settings : remote.settings,
+                settingsTs: Math.max(local.settingsTs || 0, remote.settingsTs || 0)
+            };
+        }
+
+        function applyDriveSnapshot(snapshot) {
+            localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(snapshot.matches));
+            localStorage.setItem(DRIVE_SYNC_DELETED_KEY, JSON.stringify(snapshot.deletedMatchIds));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot.state));
+            localStorage.setItem(DRIVE_SYNC_STATE_TS_KEY, String(snapshot.stateTs || 0));
+            localStorage.setItem(PLAYERS_KEY, JSON.stringify(snapshot.players));
+            localStorage.setItem(PLAYERS_HIDDEN_KEY, JSON.stringify(snapshot.hiddenPlayers));
+            localStorage.setItem(DRIVE_SYNC_HIDDEN_TS_KEY, String(snapshot.hiddenTs || 0));
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(snapshot.settings));
+            localStorage.setItem(DRIVE_SYNC_SETTINGS_TS_KEY, String(snapshot.settingsTs || 0));
+            settings = snapshot.settings || {};
+            selectedPlayerCount = settings.playerCount || selectedPlayerCount;
+            setPlayerCount(selectedPlayerCount);
+            renderPlayerSelects(settings.names || []);
+            isDoubleOut = !!settings.doubleOut;
+            selectedLegsToWin = settings.legsToWin || selectedLegsToWin;
+            isCompetition = settings.competition !== false;
+            isCricketSimpleMode = settings.cricketSimpleMode === true;
+            renderLegsButtons();
+            renderCompetitionButtons();
+            renderDoubleOutBtn();
+            renderCricketSimpleModeButtons();
+            if (isGameActive) {
+                if (snapshot.state) loadSavedState();
+                else {
+                    isGameActive = false;
+                    openSetupScreen();
+                }
+            }
+            checkSavedGameBanner();
+            renderHomePodium();
+        }
+
+        function gsiReady() {
+            if (!window.google || !google.accounts || !google.accounts.oauth2) {
+                setDriveStatus('Connexion Google indisponible', false);
+                return;
+            }
+            driveTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: DRIVE_CLIENT_ID,
+                scope: DRIVE_SCOPE,
+                callback: response => {
+                    if (response.error) {
+                        setDriveStatus('Connexion Google refusée', false);
+                        return;
+                    }
+                    driveAccessToken = response.access_token;
+                    driveTokenExpiresAt = Date.now() + (response.expires_in - 60) * 1000;
+                    localStorage.setItem(DRIVE_ENABLED_KEY, '1');
+                    syncDriveNow();
+                },
+                error_callback: () => setDriveStatus('Reconnexion requise : touchez le bouton', false)
+            });
+            if (localStorage.getItem(DRIVE_ENABLED_KEY) === '1') driveTokenClient.requestAccessToken({ prompt: '' });
+        }
+
+        function syncDriveClick() {
+            if (driveAccessToken && Date.now() < driveTokenExpiresAt) syncDriveNow();
+            else if (driveTokenClient) driveTokenClient.requestAccessToken({ prompt: '' });
+            else setDriveStatus('Chargement de la connexion Google…', false);
+        }
+
+        function scheduleDriveSync() {
+            if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) return;
+            clearTimeout(driveSyncTimer);
+            driveSyncTimer = setTimeout(syncDriveNow, 1500);
+        }
+
+        async function driveApi(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                headers: { ...(options.headers || {}), Authorization: `Bearer ${driveAccessToken}` }
+            });
+            if (response.status === 401) {
+                driveAccessToken = null;
+                throw new Error('auth');
+            }
+            if (!response.ok) throw new Error(`http ${response.status}`);
+            return response;
+        }
+
+        async function syncDriveNow() {
+            if (driveSyncBusy) {
+                driveSyncAgain = true;
+                return;
+            }
+            if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) {
+                setDriveStatus('Reconnexion requise : touchez le bouton', false);
+                return;
+            }
+            driveSyncBusy = true;
+            setDriveStatus('Synchronisation…', true);
+            try {
+                const query = encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
+                const listing = await (await driveApi(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id)`)).json();
+                const files = listing.files || [];
+                let merged = driveSnapshot();
+                for (const file of files) {
+                    const remote = await (await driveApi(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`)).json();
+                    merged = mergeDriveSnapshots(merged, remote);
+                }
+                applyDriveSnapshot(merged);
+                const json = JSON.stringify(merged);
+                if (files.length) {
+                    await driveApi(`https://www.googleapis.com/upload/drive/v3/files/${files[0].id}?uploadType=media`, {
+                        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: json
+                    });
+                } else {
+                    const boundary = 'dartmasterboundary';
+                    await driveApi('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                        method: 'POST',
+                        headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+                        body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: DRIVE_FILENAME, mimeType: 'application/json' })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`
+                    });
+                }
+                setDriveStatus(`Synchronisé à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`, true);
+            } catch (error) {
+                setDriveStatus(error.message === 'auth' ? 'Reconnexion requise : touchez le bouton' : 'Échec de la synchronisation Drive', false);
+                console.warn('Synchronisation Google Drive impossible', error);
+            } finally {
+                driveSyncBusy = false;
+                if (driveSyncAgain) {
+                    driveSyncAgain = false;
+                    scheduleDriveSync();
+                }
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && driveAccessToken && Date.now() < driveTokenExpiresAt) syncDriveNow();
+        });
     </script>
+    <script src="https://accounts.google.com/gsi/client" async defer onload="gsiReady()"></script>
 </body>
 </html>

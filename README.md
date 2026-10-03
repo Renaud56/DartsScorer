@@ -32,7 +32,7 @@ Captures mobiles réalisées avec des données de démonstration.
 - **Historique** : résultats consultables par mode, avec analyse de partie et cible pour revoir les fléchettes.
 - **Statistiques par joueur et par mode** : moyenne PPD et meilleures performances en X01; MPR et marks en Cricket; série actuelle et meilleure série de victoires calculées séparément pour chaque mode.
 - **Graphiques d’évolution** : PPD en X01 et MPR en Cricket, chacun accompagné de son bilan victoires-défaites.
-- **Sauvegarde** : export et import de l’historique au format JSON.
+- **Sauvegarde** : export et import de l’historique au format JSON, avec synchronisation Google Drive de l’historique, de la partie en cours, des joueurs et des réglages.
 - **Navigation mobile** : le bouton « précédent » ferme d’abord l’écran ouvert et permet de revenir au menu sans quitter la page.
 
 ## Utilisation
@@ -41,4 +41,6 @@ Aucune compilation ni installation de dépendances n’est nécessaire. Ouvrir `
 
 Tailwind CSS, Chart.js, Font Awesome et la police Playfair Display sont chargés depuis des CDN; une connexion Internet est nécessaire pour leur chargement.
 
-Les réglages, joueurs et parties sont stockés dans le `localStorage` du navigateur. Ils ne sont pas synchronisés entre appareils. Utiliser **Exporter** et **Importer** pour transférer une sauvegarde, et en conserver une copie avant d’effacer les données du navigateur.
+Les réglages, joueurs et parties sont d’abord stockés dans le `localStorage` du navigateur. Après connexion via **Google Drive**, les changements sont synchronisés automatiquement lorsque la connexion est active; le bouton permet aussi de lancer une synchronisation manuelle. L’export/import JSON reste disponible comme sauvegarde complémentaire.
+
+La connexion Google nécessite Google Identity Services, l’API Google Drive activée dans Google Cloud, le scope `https://www.googleapis.com/auth/drive.file` ajouté aux données OAuth et une origine JavaScript autorisée dans le client OAuth. Pour le développement local, ouvrir l’application via un serveur HTTP (par exemple `http://localhost:8000`) et autoriser exactement cette origine. Une page ouverte directement en `file://` ne peut pas utiliser OAuth. Le client réutilisé depuis YamsScorer crée dans Drive un fichier dédié nommé `dart-master-shared.json`.
