@@ -67,6 +67,8 @@
         @keyframes bump { 0% { transform: scale(1); } 35% { transform: scale(1.12); color: #fbbf24; } 100% { transform: scale(1); } }
         @keyframes bumpLong { 0% { transform: scale(1); } 15% { transform: scale(1.5); color: #fbbf24; text-shadow: 0 0 18px #fbbf24; } 70% { transform: scale(1.5); color: #fbbf24; text-shadow: 0 0 18px #fbbf24; } 100% { transform: scale(1); } }
         @keyframes dartPop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes crownDrop { from { opacity: 0; transform: translateY(-14px) rotate(-18deg) scale(.6); } 65% { opacity: 1; transform: translateY(2px) rotate(8deg) scale(1.15); } to { opacity: 1; transform: translateY(0) rotate(0) scale(1); } }
+        @keyframes confettiFall { 8% { opacity: 1; } to { opacity: 0; transform: translate3d(var(--confetti-drift), 110vh, 0) rotate(760deg); } }
         #game-setup-screen:not(.hidden), #active-game-screen:not(.hidden) { animation: fadeUp .28s ease-out; }
         #game-setup-screen:not(.hidden) > * { animation: fadeUp .35s ease-out backwards; }
         #game-setup-screen:not(.hidden) > *:nth-child(2) { animation-delay: .04s; }
@@ -79,6 +81,24 @@
         .score-num.bump-long { animation: bumpLong 1.4s ease-in-out; }
         .dart-pop { animation: dartPop .18s ease-out; }
         .pop-once { animation: popIn .5s cubic-bezier(.2,.9,.3,1.4); }
+        .cricket-row-closed { opacity: .42; filter: grayscale(1); background: rgba(148,163,184,.08); }
+        .cricket-row-closed button { cursor: not-allowed; }
+        .cricket-mark {
+            display: inline-flex; align-items: center; justify-content: center; min-width: 2.25rem; height: 2rem;
+            padding: 0 .45rem; border: 1px solid rgba(255,255,255,.45); border-radius: 9999px;
+            color: #fff; font-size: 1.1rem; font-weight: 900; line-height: 1;
+            text-shadow: 0 1px 3px rgba(0,0,0,.7); box-shadow: 0 0 12px currentColor;
+            animation: popIn .28s cubic-bezier(.2,.9,.3,1.2);
+        }
+        .cricket-mark-1 { background: linear-gradient(135deg, #047857, #34d399); }
+        .cricket-mark-2 { background: linear-gradient(135deg, #b45309, #fbbf24); }
+        .cricket-mark-3 { background: linear-gradient(135deg, #be123c, #fb7185); }
+        .winner-confetti-layer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+        .winner-confetti { position: absolute; top: -1rem; left: var(--confetti-x); width: var(--confetti-width); height: var(--confetti-height); border-radius: var(--confetti-radius); background: var(--confetti-color); opacity: 0; animation: confettiFall var(--confetti-duration) linear var(--confetti-delay) forwards; }
+        .winner-crown { position: absolute; top: -.65rem; right: -.45rem; z-index: 4; color: #fbbf24; font-size: 1.35rem; filter: drop-shadow(0 2px 5px rgba(0,0,0,.7)); animation: crownDrop .7s cubic-bezier(.2,.9,.3,1.2) both; }
+        .winner-name { position: relative; z-index: 4; display: block; color: #fcd34d; font-size: 1.8rem; font-weight: 900; line-height: 1.05; overflow-wrap: anywhere; text-shadow: 0 0 16px rgba(251,191,36,.5); }
+        .winner-caption { display: block; margin-top: .35rem; color: #e2e8f0; font-size: .95rem; font-weight: 600; }
+        #winner-modal > .winner-dialog { position: relative; z-index: 2; }
         button { transition: transform .12s ease, background-color .15s ease, border-color .15s ease, filter .15s ease; }
         @media (hover: hover) {
             button:not(:disabled):hover { filter: brightness(1.25); border-color: rgba(148,163,184,.5); }
@@ -410,12 +430,13 @@
 
     <!-- Winner Modal -->
     <div id="winner-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
-            <div class="w-16 h-16 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-3xl pop-once">
+        <div class="winner-dialog bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div class="relative w-16 h-16 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-3xl pop-once">
                 <i class="fa-solid fa-trophy"></i>
+                <i class="fa-solid fa-crown winner-crown" aria-hidden="true"></i>
             </div>
             <h3 class="text-2xl font-black text-white" id="winner-title">Victoire !</h3>
-            <p class="text-slate-300 text-sm" id="winner-message">Joueur a remporté la partie !</p>
+            <p class="text-slate-300 text-sm" id="winner-message"><span class="winner-name"></span><span class="winner-caption">remporte la partie !</span></p>
             <div class="pt-2 flex flex-col gap-2">
                 <button onclick="undoWin()" class="w-full bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/40 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-rotate-left"></i> Retour (annuler le dernier coup)
@@ -1654,18 +1675,19 @@
 
             rowsContainer.innerHTML = '';
             CRICKET_TARGETS.forEach(target => {
+                const isClosed = gameState.players.every(player => player.cricketMarks[target] >= 3);
                 const row = document.createElement('div');
-                row.className = 'grid py-1.5 px-1 text-center items-center divide-x divide-slate-800/60 transition';
+                row.className = `grid py-1.5 px-1 text-center items-center divide-x divide-slate-800/60 transition ${isClosed ? 'cricket-row-closed' : ''}`;
                 row.style.gridTemplateColumns = `repeat(${colCount}, minmax(0, 1fr))`;
 
                 const targetLabel = target === 25 ? 'BULL' : target;
-                row.innerHTML = `<div class="font-extrabold text-slate-200 text-sm">${targetLabel}</div>`;
+                row.innerHTML = `<div class="font-extrabold text-slate-200 text-sm">${targetLabel}${isClosed ? '<span class="block text-[9px] font-bold tracking-wider">FERMÉ</span>' : ''}</div>`;
 
                 gameState.players.forEach((p, pIdx) => {
                     const marks = p.cricketMarks[target];
                     row.innerHTML += `
                         <div class="px-1">
-                            <button onclick="hitCricketTarget(${pIdx}, ${target})" class="w-full bg-slate-800 hover:bg-slate-700 py-1 rounded-lg border border-slate-700 text-emerald-400 font-extrabold text-sm min-h-[48px] active:scale-95 transition">
+                            <button onclick="hitCricketTarget(${pIdx}, ${target})" ${isClosed ? 'disabled' : ''} class="w-full bg-slate-800 hover:bg-slate-700 py-1 rounded-lg border border-slate-700 text-emerald-400 font-extrabold text-sm min-h-[48px] active:scale-95 transition">
                                 ${getCricketSymbol(marks)}
                             </button>
                         </div>
@@ -1683,9 +1705,7 @@
 
         function getCricketSymbol(count) {
             if (count === 0) return '<span class="text-slate-600">-</span>';
-            if (count === 1) return '/';
-            if (count === 2) return 'X';
-            return '<span class="text-emerald-400 font-extrabold">⨂</span>';
+            return `<span class="cricket-mark cricket-mark-${count}">+${count}</span>`;
         }
 
         function renderDartsBadges(darts) {
@@ -1697,12 +1717,43 @@
             isGameActive = false;
             clearActiveGameStorage();
             document.getElementById('winner-title').innerText = "Victoire !";
-            document.getElementById('winner-message').innerText = `${name} remporte la partie !`;
+            document.querySelector('#winner-message .winner-name').textContent = name;
+            launchVictoryCelebration();
             document.getElementById('winner-modal').classList.remove('hidden');
         }
 
+        function launchVictoryCelebration() {
+            const modal = document.getElementById('winner-modal');
+            modal.querySelector('.winner-confetti-layer')?.remove();
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const layer = document.createElement('span');
+            layer.className = 'winner-confetti-layer';
+            layer.setAttribute('aria-hidden', 'true');
+            const colors = ['#fbbf24', '#34d399', '#fb7185', '#60a5fa', '#f8fafc'];
+
+            for (let i = 0; i < 48; i++) {
+                const piece = document.createElement('span');
+                piece.className = 'winner-confetti';
+                piece.style.setProperty('--confetti-x', `${Math.random() * 100}vw`);
+                piece.style.setProperty('--confetti-width', `${5 + Math.random() * 6}px`);
+                piece.style.setProperty('--confetti-height', `${8 + Math.random() * 9}px`);
+                piece.style.setProperty('--confetti-radius', Math.random() > .7 ? '50%' : '2px');
+                piece.style.setProperty('--confetti-color', colors[i % colors.length]);
+                piece.style.setProperty('--confetti-duration', `${5.5 + Math.random() * 2}s`);
+                piece.style.setProperty('--confetti-delay', `${Math.random() * .8}s`);
+                piece.style.setProperty('--confetti-drift', `${Math.random() * 180 - 90}px`);
+                layer.appendChild(piece);
+            }
+
+            modal.prepend(layer);
+            setTimeout(() => layer.remove(), 9000);
+        }
+
         function closeWinnerModal() {
-            document.getElementById('winner-modal').classList.add('hidden');
+            const modal = document.getElementById('winner-modal');
+            modal.classList.add('hidden');
+            modal.querySelector('.winner-confetti-layer')?.remove();
         }
 
         function showTemporaryToast(msg, bg) {
@@ -2312,19 +2363,39 @@
         }
 
         function drawHitBadge(ctx, x, y, count, bgColor, textColor) {
+            ctx.save();
+
             ctx.beginPath();
-            ctx.arc(x, y, 7, 0, 2 * Math.PI);
-            ctx.fillStyle = bgColor;
+            ctx.arc(x, y, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = '#020617';
             ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(x, y, 8.5, 0, 2 * Math.PI);
+            ctx.fillStyle = bgColor;
+            ctx.shadowColor = 'rgba(0, 0, 0, .8)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetY = 1;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             ctx.stroke();
 
-            ctx.fillStyle = textColor;
-            ctx.font = 'black 9px sans-serif';
+            ctx.font = '900 12px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = 'rgba(0, 0, 0, .9)';
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(count, x, y);
+            ctx.fillStyle = textColor;
             ctx.fillText(count, x, y);
+
+            ctx.restore();
         }
     </script>
 </body>
