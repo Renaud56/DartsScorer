@@ -2973,10 +2973,11 @@
         let driveSyncBusy = false;
         let driveSyncAgain = false;
 
-        function setDriveStatus(message, connected) {
+        function setDriveStatus(message) {
             const status = document.getElementById('drive-sync-status');
             const button = document.getElementById('drive-sync-btn');
             if (status) status.innerText = message;
+            const connected = !!driveAccessToken && Date.now() < driveTokenExpiresAt;
             if (button) button.innerHTML = `<i class="fa-brands fa-google-drive"></i> ${connected ? 'Synchroniser maintenant' : 'Se connecter à Google Drive'}`;
         }
 
@@ -3080,7 +3081,7 @@
 
         function gsiReady() {
             if (!window.google || !google.accounts || !google.accounts.oauth2) {
-                setDriveStatus('Connexion Google indisponible', false);
+                setDriveStatus('Connexion Google indisponible');
                 return;
             }
             driveTokenClient = google.accounts.oauth2.initTokenClient({
@@ -3088,7 +3089,7 @@
                 scope: DRIVE_SCOPE,
                 callback: response => {
                     if (response.error) {
-                        setDriveStatus('Connexion Google refusée', false);
+                        setDriveStatus('Connexion Google refusée');
                         return;
                     }
                     driveAccessToken = response.access_token;
@@ -3097,15 +3098,15 @@
                     driveTokenExpiryTimer = setTimeout(() => {
                         driveAccessToken = null;
                         driveTokenExpiresAt = 0;
-                        setDriveStatus('Reconnexion requise : touchez le bouton', false);
+                        setDriveStatus('Reconnexion requise : touchez le bouton');
                     }, Math.max(0, driveTokenExpiresAt - Date.now()));
                     localStorage.setItem(DRIVE_ENABLED_KEY, '1');
                     syncDriveNow();
                 },
-                error_callback: () => setDriveStatus('Reconnexion requise : touchez le bouton', false)
+                error_callback: () => setDriveStatus('Reconnexion requise : touchez le bouton')
             });
             if (localStorage.getItem(DRIVE_ENABLED_KEY) === '1') {
-                setDriveStatus('Reconnexion requise : touchez le bouton', false);
+                setDriveStatus('Reconnexion requise : touchez le bouton');
             }
         }
 
@@ -3116,7 +3117,7 @@
 
         function requestDriveToken() {
             if (!driveTokenClient) {
-                setDriveStatus('Chargement de la connexion Google…', false);
+                setDriveStatus('Chargement de la connexion Google…');
                 return;
             }
             driveTokenClient.requestAccessToken({ prompt: '' });
@@ -3147,11 +3148,11 @@
                 return;
             }
             if (!driveAccessToken || Date.now() >= driveTokenExpiresAt) {
-                setDriveStatus('Reconnexion requise : touchez le bouton', false);
+                setDriveStatus('Reconnexion requise : touchez le bouton');
                 return;
             }
             driveSyncBusy = true;
-            setDriveStatus('Synchronisation…', true);
+            setDriveStatus('Synchronisation…');
             try {
                 const query = encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
                 const files = (await (await driveApi(`https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=createdTime&fields=files(id)`)).json()).files || [];
@@ -3174,9 +3175,9 @@
                         body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: DRIVE_FILENAME, mimeType: 'application/json' })}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`
                     });
                 }
-                setDriveStatus(`Synchronisé à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`, true);
+                setDriveStatus(`Synchronisé à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`);
             } catch (error) {
-                setDriveStatus(error.message === 'auth' ? 'Reconnexion requise : touchez le bouton' : 'Échec de la synchronisation Drive', false);
+                setDriveStatus(error.message === 'auth' ? 'Reconnexion requise : touchez le bouton' : 'Échec de la synchronisation Drive');
                 console.warn('Synchronisation Google Drive impossible', error);
             } finally {
                 driveSyncBusy = false;
