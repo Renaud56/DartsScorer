@@ -1000,8 +1000,14 @@
                             </div>
                             <div class="grid grid-cols-3 gap-1.5">${metrics}</div>
                             ${modeStats.played ? `
-                                <div class="text-[10px] text-slate-400 font-semibold">${label} · statistique et bilan V-D</div>
-                                <div class="relative h-32"><canvas id="player-evolution-${playerIdx}-${mode}" aria-label="Évolution ${label} de ${escapeHtml(s.name)}"></canvas></div>` : '<div class="text-[10px] text-slate-500">Aucune partie dans ce mode.</div>'}
+                                <div class="text-[10px] text-slate-400 font-semibold">${label} · évolution par partie</div>
+                                <div class="relative h-32"><canvas id="player-evolution-${playerIdx}-${mode}" aria-label="Évolution ${label} de ${escapeHtml(s.name)}"></canvas></div>
+                                <div class="text-[10px] text-slate-400 font-semibold">Série de victoires / défaites</div>
+                                <div class="relative h-32 overflow-hidden">
+                                    <span class="absolute top-1 left-2 z-10 pointer-events-none text-[9px] font-extrabold text-emerald-400">▲ victoires d'affilée</span>
+                                    <span class="absolute bottom-1 right-2 z-10 pointer-events-none text-[9px] font-extrabold text-red-400">▼ défaites d'affilée</span>
+                                    <canvas id="player-streak-${playerIdx}-${mode}" aria-label="Série de victoires et défaites de ${escapeHtml(s.name)} en ${label}"></canvas>
+                                </div>` : '<div class="text-[10px] text-slate-500">Aucune partie dans ce mode.</div>'}
                             ${h2h ? `<div class="space-y-1 pt-1">${h2h}</div>` : ''}
                         </section>`;
                 };
@@ -1052,9 +1058,13 @@
                     const canvas = document.getElementById(`player-evolution-${playerIdx}-${config.key}`);
                     if (!canvas || !matches.length) return;
 
-                    let winLossBalance = 0;
+                    let currentStreak = 0;
+                    let bestWinStreak = 0;
+                    let bestWinStart = 0;
+                    let currentWinStart = 0;
+                    let bestWinEnd = 0;
                     const metricData = [];
-                    const winLossData = [];
+                    const streakData = [];
                     matches.forEach(match => {
                         const participant = match.players.find(entry => entry.name === player.name);
                         if (config.key === 'x01') {
@@ -1065,8 +1075,18 @@
                             const rounds = getCricketRounds(participant);
                             metricData.push(rounds.length ? rounds.reduce((sum, marks) => sum + marks, 0) / rounds.length : null);
                         }
-                        winLossBalance += match.winner === player.name ? 1 : -1;
-                        winLossData.push(winLossBalance);
+                        if (match.winner === player.name) {
+                            currentStreak = currentStreak > 0 ? currentStreak + 1 : 1;
+                            if (currentStreak === 1) currentWinStart = streakData.length;
+                            if (currentStreak > bestWinStreak) {
+                                bestWinStreak = currentStreak;
+                                bestWinStart = currentWinStart;
+                                bestWinEnd = streakData.length;
+                            }
+                        } else {
+                            currentStreak = currentStreak < 0 ? currentStreak - 1 : -1;
+                        }
+                        streakData.push(currentStreak);
                     });
 
                     const validValues = metricData.filter(value => value !== null && Number.isFinite(value));
@@ -1089,8 +1109,7 @@
                         data: {
                             labels: matches.map((_, idx) => `P${idx + 1}`),
                             datasets: [
-                                { label: config.label, data: metricData, yAxisID: 'y', borderColor: config.color, backgroundColor: `${config.color}22`, borderWidth: 2, pointRadius: 3, tension: .25, spanGaps: true },
-                                { label: 'Bilan V-D', data: winLossData, yAxisID: 'yCount', borderColor: '#34d399', backgroundColor: '#34d39922', borderWidth: 2, pointRadius: 2, stepped: true }
+                                { label: config.label, data: metricData, yAxisID: 'y', borderColor: config.color, backgroundColor: `${config.color}22`, borderWidth: 2, pointRadius: 3, tension: .25, spanGaps: true }
                             ]
                         },
                         options: {
@@ -1108,10 +1127,102 @@
                             },
                             scales: {
                                 x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: '#334155' } },
-                                y: { min: axisMin, max: axisMax, title: { display: true, text: config.label, color: config.color }, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                                yCount: { beginAtZero: true, position: 'right', title: { display: true, text: 'Bilan V-D', color: '#34d399' }, ticks: { color: '#94a3b8', precision: 0 }, grid: { drawOnChartArea: false } }
+                                y: { min: axisMin, max: axisMax, title: { display: true, text: config.label, color: config.color }, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
                             }
                         }
+                    }));
+
+                    const streakCanvas = document.getElementById(`player-streak-${playerIdx}-${config.key}`);
+                    if (!streakCanvas) return;
+                    const streakLimit = Math.max(3, ...streakData.map(value => Math.abs(value)));
+                    const bestStreakData = streakData.map((value, idx) => idx >= bestWinStart && idx <= bestWinEnd ? value : null);
+                    const streakLabels = streakData.map((_, idx) => `${idx + 1}`);
+                    playerEvolutionCharts.push(new Chart(streakCanvas.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: streakLabels,
+                            datasets: [
+                                {
+                                    label: 'Série',
+                                    data: streakData,
+                                    borderColor: '#cbd5e1',
+                                    backgroundColor: streakData.map(value => value > 0 ? '#22c55e' : '#ef4444'),
+                                    borderWidth: 3,
+                                    pointRadius: streakData.length > 25 ? 2.5 : 4,
+                                    pointHoverRadius: 6,
+                                    pointBackgroundColor: streakData.map(value => value > 0 ? '#22c55e' : '#ef4444'),
+                                    pointBorderColor: '#0f172a',
+                                    pointBorderWidth: 1.5,
+                                    tension: 0,
+                                    fill: false
+                                },
+                                {
+                                    label: 'Meilleure série de victoires',
+                                    data: bestStreakData,
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 4,
+                                    pointRadius: 0,
+                                    tension: 0,
+                                    spanGaps: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            layout: { padding: { top: 18, right: 8, bottom: 14, left: 2 } },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        title: items => matches[items[0].dataIndex].date || `Partie ${items[0].dataIndex + 1}`,
+                                        label: item => {
+                                            if (item.datasetIndex !== 0) return `Meilleure série : ${bestWinStreak} victoire${bestWinStreak > 1 ? 's' : ''}`;
+                                            const value = item.raw;
+                                            return value > 0 ? `${value} victoire${value > 1 ? 's' : ''} d'affilée` : `${Math.abs(value)} défaite${value < -1 ? 's' : ''} d'affilée`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { color: '#94a3b8', font: { size: 10, weight: 'bold' }, maxTicksLimit: 10, maxRotation: 0 },
+                                    grid: { color: '#334155' },
+                                    border: { color: '#475569' }
+                                },
+                                y: {
+                                    min: -streakLimit,
+                                    max: streakLimit,
+                                    ticks: {
+                                        color: '#94a3b8',
+                                        font: { size: 10, weight: 'bold' },
+                                        stepSize: streakLimit <= 6 ? 1 : Math.ceil(streakLimit / 6),
+                                        callback: value => value > 0 ? `+${value}` : value
+                                    },
+                                    grid: { color: context => context.tick.value === 0 ? '#e2e8f0' : '#334155', lineWidth: context => context.tick.value === 0 ? 2 : 1 },
+                                    border: { display: false }
+                                }
+                            }
+                        },
+                        plugins: [{
+                            id: 'streakPointLabels',
+                            afterDatasetsDraw: chart => {
+                                if (streakData.length > 16) return;
+                                const context = chart.ctx;
+                                const meta = chart.getDatasetMeta(0);
+                                context.save();
+                                context.fillStyle = '#e2e8f0';
+                                context.font = 'bold 10px sans-serif';
+                                context.textAlign = 'center';
+                                meta.data.forEach((point, idx) => {
+                                    const value = streakData[idx];
+                                    context.fillText(String(Math.abs(value)), point.x, point.y + (value > 0 ? -8 : 14));
+                                });
+                                context.restore();
+                            }
+                        }]
                     }));
                 });
             });
