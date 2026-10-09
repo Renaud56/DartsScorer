@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0e0a06">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Fléchettes">
     <title>Compteur Fléchettes - Suivi & Cible</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -3204,6 +3210,11 @@
         document.addEventListener('pointerdown', () => {
             if (driveNeedAuth && localStorage.getItem(DRIVE_ENABLED_KEY) === '1' && Date.now() - driveLastTokenTry > 30000) requestDriveToken();
         });
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        }
     </script>
     <script src="https://accounts.google.com/gsi/client" async defer onload="gsiReady()"></script>
 </body>
